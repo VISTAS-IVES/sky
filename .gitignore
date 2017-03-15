@@ -1,0 +1,7 @@
+# Mac OS X Desktop Service Store files
+.DS_Store
+
+# data directory, so we're not clogging the repository with these massive files
+data/
+
+__pycache__/
