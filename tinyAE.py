@@ -13,7 +13,7 @@ import utils
 data = utils.read_inputs_flat("data/filteredImages0518")
 
 # Number of hidden units
-n_hidden = 1
+n_hidden = 2
 
 # Number of input/output features (pixels * color channels)
 n_features = data.shape[1]
@@ -63,11 +63,14 @@ for i in range(1, n_iter + 1):
         # Print batch cost
         batch_cost = sess.run(cost, feed_dict={input_layer: batch})
         print(i, '\t', batch_cost)
-        # Display example output
-        ex = example.reshape((-1, n_features))
-        ex_out = sess.run(output_layer, feed_dict={input_layer: ex})
-        display(ex_out, 'Example output')
-        # Display output for various hidden unit values
-        for j in (0.0, 0.5, 1.0):
-            ex_out = sess.run(output_layer, feed_dict={hidden_layer: [[j]]})
-            display(ex_out, 'Hidden unit {}'.format(j))
+        if (i % (int(n_iter / 10)) == 0):
+            # Display example output
+            ex = example.reshape((-1, n_features))
+            ex_out = sess.run(output_layer, feed_dict={input_layer: ex})
+            display(ex_out, 'Example output')
+            # Display output for various hidden unit values
+            for j in (0.0, 0.5, 1.0):
+                for k in (0.0, 0.5, 1.0):
+                    ex_out = sess.run(output_layer,
+                                      feed_dict={hidden_layer: [[j, k]]})
+                    display(ex_out, 'Hidden unit {}, {}'.format(j, k))
