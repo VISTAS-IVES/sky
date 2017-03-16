@@ -13,7 +13,7 @@ import utils
 data = utils.read_inputs_flat("data/filteredImages0518")
 
 # Number of hidden units
-n_hidden = 2
+n_hidden = 10
 
 # Number of input/output features (pixels * color channels)
 n_features = data.shape[1]
@@ -54,7 +54,7 @@ sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
 test_example = data[ind:ind+1, :]
-n_iter = 5000
+n_iter = 10000
 print('iter\ttrain_cost')
 for i in range(1, n_iter + 1):
     batch = utils.next_batch(data, 50)
@@ -68,9 +68,9 @@ for i in range(1, n_iter + 1):
             ex = example.reshape((-1, n_features))
             ex_out = sess.run(output_layer, feed_dict={input_layer: ex})
             display(ex_out, 'Example output')
-            # Display output for various hidden unit values
-            for j in (0.0, 0.5, 1.0):
-                for k in (0.0, 0.5, 1.0):
-                    ex_out = sess.run(output_layer,
-                                      feed_dict={hidden_layer: [[j, k]]})
-                    display(ex_out, 'Hidden unit {}, {}'.format(j, k))
+
+
+def explore(hidden):
+    """Displays the output image for the given hidden unit vector."""
+    ex_out = sess.run(output_layer, feed_dict={hidden_layer: [hidden]})
+    display(ex_out, 'Hidden layer: {}'.format(hidden))
