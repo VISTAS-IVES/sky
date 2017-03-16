@@ -27,16 +27,16 @@ def layer(previous, number_of_outputs):
     dims = [int(previous.get_shape()[1]), number_of_outputs]
     w = tf.Variable(tf.random_uniform(dims, -1, 1))
     b = tf.Variable(tf.zeros([number_of_outputs]))
-    return tf.nn.relu(tf.matmul(previous, w) + b)
+    return tf.nn.sigmoid(tf.matmul(previous, w) + b)
 
 # Build graph
 tf.reset_default_graph()
 train_in = tf.placeholder(tf.float32, shape=[None, n_features])
 a1 = layer(train_in, n_hidden)
 a2 = layer(a1, n_features)
-cost = tf.reduce_mean(tf.squared_difference(a2, train_in), 1)
+cost = tf.reduce_mean(tf.squared_difference(a2 * 255, train_in), 1)
 cost = tf.reduce_mean(cost)  # across batches
-learning_rate = 1.0e-6
+learning_rate = 1.0e-3
 optimizer = tf.train.AdamOptimizer(learning_rate).minimize(cost)
 
 # Let's look at one training image
@@ -52,12 +52,12 @@ sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
 test_example = x[ind:ind+1, :]
-n_iter = 1000
+n_iter = 10000
 print('iter\ttrain_cost')
 for i in range(n_iter):
     batch = utils.next_batch(x, 50)
     sess.run(optimizer, feed_dict={train_in: batch})
-    if (i % (int(n_iter / 10)) == 0):
+    if (i % (int(n_iter / 100)) == 0):
         batch_cost = sess.run(cost, feed_dict={train_in: batch})
         print(i, '\t', batch_cost)
 #    if (i%(int(n_iter/100))==0):
@@ -73,4 +73,4 @@ recon = sess.run(a2, feed_dict={train_in: ex})
 recon_images = recon.reshape((480, 480, 3))
 plt.figure()
 plt.title("final")
-plt.imshow(np.clip(recon_images/255., 0, 1))
+plt.imshow(recon_images*255)
