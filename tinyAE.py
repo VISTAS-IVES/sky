@@ -6,71 +6,68 @@
 """
 
 import tensorflow as tf
-import numpy as np
 import matplotlib.pyplot as plt
 import utils
 
-tf.reset_default_graph()
-
-# Reads in image and flattens it out
-x = utils.read_inputs_flat("data/filteredImages0518")
+# Read in images and flatten them out
+data = utils.read_inputs_flat("data/filteredImages0518")
 
 # Number of hidden units
 n_hidden = 1
 
-# Number of features
-n_features = x.shape[1]
+# Number of input/output features (pixels * color channels)
+n_features = data.shape[1]
+
+# Network learning rate
+learning_rate = 1.0e-3
 
 
 def layer(previous, number_of_outputs):
-    """Create a network and return its output node."""
+    """Create a sigmoid layer and return its output node."""
     dims = [int(previous.get_shape()[1]), number_of_outputs]
     w = tf.Variable(tf.random_uniform(dims, -1, 1))
     b = tf.Variable(tf.zeros([number_of_outputs]))
     return tf.nn.sigmoid(tf.matmul(previous, w) + b)
 
+
+def display(image, title):
+    """Displays a sky image (original or network output)."""
+    plt.title(title)
+    plt.imshow(image.reshape(480, 480, 3))
+    plt.show()
+
 # Build graph
 tf.reset_default_graph()
-train_in = tf.placeholder(tf.float32, shape=[None, n_features])
-a1 = layer(train_in, n_hidden)
-a2 = layer(a1, n_features)
-cost = tf.reduce_mean(tf.squared_difference(a2 * 255, train_in), 1)
-cost = tf.reduce_mean(cost)  # across batches
-learning_rate = 1.0e-3
+input_layer = tf.placeholder(tf.float32, shape=[None, n_features])
+hidden_layer = layer(input_layer, n_hidden)
+output_layer = layer(hidden_layer, n_features)
+cost = tf.reduce_mean(tf.squared_difference(output_layer * 255, input_layer))
 optimizer = tf.train.AdamOptimizer(learning_rate).minimize(cost)
 
-# Let's look at one training image
+# Look at one training image
 ind = 100
-example = x[ind]
-ex_image = example.reshape(480, 480, 3)
-plt.figure()
-plt.title("Original Image")
-plt.imshow(ex_image)
+example = data[ind]
+display(example, 'Example input')
 
 # Train the network
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-test_example = x[ind:ind+1, :]
-n_iter = 10000
+test_example = data[ind:ind+1, :]
+n_iter = 5000
 print('iter\ttrain_cost')
-for i in range(n_iter):
-    batch = utils.next_batch(x, 50)
-    sess.run(optimizer, feed_dict={train_in: batch})
+for i in range(1, n_iter + 1):
+    batch = utils.next_batch(data, 50)
+    sess.run(optimizer, feed_dict={input_layer: batch})
     if (i % (int(n_iter / 100)) == 0):
-        batch_cost = sess.run(cost, feed_dict={train_in: batch})
+        # Print batch cost
+        batch_cost = sess.run(cost, feed_dict={input_layer: batch})
         print(i, '\t', batch_cost)
-#    if (i%(int(n_iter/100))==0):
-#        recon = sess.run(Y, feed_dict={X: test_example})
-#        test_image = recon.reshape(480,480,3)
-#        plt.figure()
-#        plt.title("iteration "+ str(i))
-#        plt.imshow(np.clip(test_image/255., 0, 1))
-
-ex = example.reshape((-1, 691200))
-recon = sess.run(a2, feed_dict={train_in: ex})
-
-recon_images = recon.reshape((480, 480, 3))
-plt.figure()
-plt.title("final")
-plt.imshow(recon_images)
+        # Display example output
+        ex = example.reshape((-1, n_features))
+        ex_out = sess.run(output_layer, feed_dict={input_layer: ex})
+        display(ex_out, 'Example output')
+        # Display output for various hidden unit values
+        for j in (0.0, 0.5, 1.0):
+            ex_out = sess.run(output_layer, feed_dict={hidden_layer: [[j]]})
+            display(ex_out, 'Hidden unit {}'.format(j))
