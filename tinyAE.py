@@ -48,7 +48,7 @@ optimizer = tf.train.AdamOptimizer(learning_rate).minimize(cost)
 # Look at one training image
 ind = 100
 example = data[ind]
-display(example, 'Example input')
+#display(example, 'Example input')
 
 # Train the network
 sess = tf.Session()
@@ -69,7 +69,7 @@ for i in range(1, n_iter + 1):
             # Display example output
             ex = example.reshape((-1, n_features))
             ex_out = sess.run(output_layer, feed_dict={input_layer: ex})
-            display(ex_out, 'Example output')
+#            display(ex_out, 'Example output')
 after = time()
 print('Elapsed time: {}'.format(after - before))
 
