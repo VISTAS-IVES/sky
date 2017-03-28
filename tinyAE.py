@@ -8,12 +8,13 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import utils
+from time import time
 
 # Read in images and flatten them out
 data = utils.read_inputs_flat("data/filteredImages0518")
 
 # Number of hidden units
-n_hidden = 10
+n_hidden = 100
 
 # Number of input/output features (pixels * color channels)
 n_features = data.shape[1]
@@ -54,8 +55,9 @@ sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
 test_example = data[ind:ind+1, :]
-n_iter = 10000
+n_iter = 1000
 print('iter\ttrain_cost')
+before = time()
 for i in range(1, n_iter + 1):
     batch = utils.next_batch(data, 50)
     sess.run(optimizer, feed_dict={input_layer: batch})
@@ -68,6 +70,8 @@ for i in range(1, n_iter + 1):
             ex = example.reshape((-1, n_features))
             ex_out = sess.run(output_layer, feed_dict={input_layer: ex})
             display(ex_out, 'Example output')
+after = time()
+print('Elapsed time: {}'.format(after - before))
 
 
 def explore(hidden):
