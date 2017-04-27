@@ -49,10 +49,10 @@ import montage
 checkptSave = True  # set to True if you want to save to checkpoint
 checkptRestore = False # set to True to restore from checkpoint (make sure checkptName is right)
 folder = 'checkPoints/'
-checkptName = folder + "cloud_class5meanShift.ckpt"  #Name of checkpoint file to restore
+checkptName = folder + "cloud_class5meanShift.ckpt-99"  #Name of checkpoint file to restore
 checkptNameRestore = folder + "cloud_class5meanShift.ckpt"  #Name of checkpoint file to save to
 
-x0 = np.load('../cloudInputs0518.npy');  # cloud image
+x = np.load('../cloudInputs0518.npy');  # cloud image
 y6_classes = np.load('../cloudTargets0518.npy');  # fractions as described above
 
 #%%  Cell separator
@@ -61,11 +61,11 @@ y6_classes = np.load('../cloudTargets0518.npy');  # fractions as described above
 # compute per pixel mean, std over all the images. Shift the inputs by the mean and divide by std.
 # Note, the black pixels are all zero so the std is also zero.  This causes divide by zero problem
 # so I replace all zero std values with 1. Thus, when one divides (0/1) one just get zero back.
-x_mean = np.mean(x0,axis=0) 
-x_std = np.std(x0,axis=0)
+x_mean = np.mean(x,axis=0) 
+x_std = np.std(x,axis=0)
 indices = np.where(x_std == 0) # locate indices of 0 std's
 x_std[indices] = 1  # replace 0 with 1 to avoid divide by zero
-x = (x0-x_mean)/x_std
+x = (x-x_mean)/x_std
 
 xdims = np.shape(x)
 #%%  Cell separator
@@ -75,8 +75,8 @@ row_sums = np.sum(y5, axis=1)    # get row sums
 y = y5/row_sums[:,None]     # rescale
 
 chan_input = 3  # this is the 3 RGB color channels  
-chan0 = 32  # number of channels in convo hidden layer. 
-chan1 = 64 
+chan0 = 32  # number of channels in first convo hidden layer. 
+chan1 = 64  # number of channels in second convo hidden layer. 
 filter_size = 5 # Convo filter size for hidden layers
 nNodes = 50  # Number of nodes in first fully connected layer
 nClasses = len(y[0])  # Number of nodes in second fully connected 
@@ -162,6 +162,12 @@ train_step = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
 #%%  Cell separator
 # Initialize Tensorflow session
 
+# If using the tensorflow GPU version. I think I have 2G memory so this
+# would give 1.6G to tensorflow.
+# HAVEN'T TRIED THIS YET
+#gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.8)
+#sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
@@ -241,11 +247,14 @@ y_pred = sess.run(y_conv, feed_dict={X: batch[0], Y:batch[1],keep_prob: 1.0})
 print('batch\n',batch[1])
 print('cost:',cost)
 print(y_pred)
-for i in range(5): 
-    y_pred = sess.run(tf.nn.softmax(y_conv), feed_dict={X: batch[0][i], Y:batch[1][i],keep_prob: 1.0})
-    print('targets:\n',batch[1][i])
-    print('predicted:\n',y_pred[i],'\n')
 
+y_pred2 = sess.run(tf.nn.softmax(y_conv), feed_dict={X: batch[0], Y:batch[1],keep_prob: 1.0})
+for i in range(5): 
+#    y_pred = sess.run(tf.nn.softmax(y_conv), feed_dict={X: batch[0][i:i+1], Y:batch[1][i:i+1],keep_prob: 1.0})
+    print('targets:\n',batch[1][i])
+    print('predicted:\n',y_pred2[i],'\n')
+
+#%%  Cell separator
 # Look at weight filters in first layer
 W1 = sess.run(W_conv1)
 b1 = sess.run(b_conv1)
@@ -254,7 +263,7 @@ b1 = sess.run(b_conv1)
 m1 = montage.montage_filters(W1)
 plt.figure()
 plt.axis('off')
-#plt.imshow(m1, cmap = 'seismic', interpolation='nearest') 
+#plt.imshow(m1, cmap = 'gray', interpolation='nearest') 
 #plt.imshow(m1, cmap = 'seismic', interpolation='bicubic') 
 plt.imshow(m1, cmap = 'gray', interpolation='bicubic') 
 
@@ -264,3 +273,8 @@ m2 = montage.montage_filters(W2)
 plt.figure()   
 plt.imshow(m2, cmap = 'seismic',interpolation='bicubic')  
 
+#%%  Cell separator
+# Look at gradients - THIS DOESN'T WORK YET
+batch = utils.next_batch(x,y, 1) 
+grad = tf.gradients(tf.reduce_max(y_conv),x)
+temp = sess.run(grad, feed_dict={X: batch[0], Y:batch[1],keep_prob: 1.0})
