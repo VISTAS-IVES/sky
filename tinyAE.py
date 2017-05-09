@@ -14,7 +14,7 @@ from time import time
 data = utils.read_inputs_flat("data/filteredImages0518")
 
 # Number of hidden units
-n_hidden = 100
+n_hidden = 1000
 
 # Number of input/output features (pixels * color channels)
 n_features = data.shape[1]
