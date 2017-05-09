@@ -3,5 +3,6 @@
 
 # data directory, so we're not clogging the repository with these massive files
 data/
+data
 
 __pycache__/
