@@ -22,5 +22,6 @@ def list_colors(img):
     # Return those colors
     return a[idx]
 
-img = misc.imread('stripes.png')
-print(list_colors(img))
+if __name__ == '__main__':
+    img = misc.imread('stripes.png')
+    print(list_colors(img))
