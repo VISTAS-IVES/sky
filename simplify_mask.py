@@ -22,6 +22,14 @@ def list_colors(img):
     # Return those colors
     return a[idx]
 
+# Colors from mask images
+BLACK = np.array([0, 0, 0])
+BLUE = np.array([0, 0, 255])
+GREEN = np.array([0, 255, 0])
+GRAY = np.array([192, 192, 192])
+YELLOW = np.array([255, 255, 0])
+WHITE = np.array([255, 255, 255])
+
 if __name__ == '__main__':
-    img = misc.imread('stripes.png')
+    img = misc.imread('data/masks/sgptsicldmaskC1.a1.20160414.173800.png.20160414173800.png')
     print(list_colors(img))
