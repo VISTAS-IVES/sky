@@ -42,15 +42,13 @@ def simplify_colors(img):
     
 def simplify_images(in_dir, out_dir):
     """Writes similified versions of all images in in_dir to out_dir.
-    Creates out_dir if necessary. Returns an array of relative
-    frequencies of BLUE, WHITE, and BLACK."""
-    os.mkdir(out_dir)
-    counts = np.zeros(2, dtype=np.int)
+    Returns an array of relative frequencies of BLUE, WHITE, and BLACK."""
+    counts = np.zeros(3, dtype=np.int)
     for file in os.listdir(in_dir):
         img = misc.imread(in_dir + file)
         simplified = simplify_colors(img)
         counts = counts + color_counts(simplified)
-        Image.fromarray(simplified.save(out_dir + file))
+        Image.fromarray(simplified).save(out_dir + file)
     return counts / counts.sum()
 
 def color_counts(img):
@@ -62,4 +60,4 @@ def color_counts(img):
     return np.array([blue, white, black])
     
 if __name__ == '__main__':
-    print(simplify_images('data/masks', 'data/simplified_masks'))
+    print(simplify_images('data/masks/', 'data/simplified_masks/'))
