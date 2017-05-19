@@ -34,5 +34,12 @@ class TestSimplifyMask(unittest.TestCase):
                           [WHITE, BLACK, WHITE]])
         self.assertTrue((colors == correct).all())
 
+    def test_color_counts(self):
+        img = np.array([[BLACK, BLUE, BLACK],
+                        [WHITE, BLACK, WHITE]])
+        probs = simplify_mask.color_counts(img)
+        correct = np.array([1, 2, 3])
+        self.assertTrue((probs == correct).all())
+        
 if __name__ == '__main__':
     unittest.main()

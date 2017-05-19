@@ -33,7 +33,8 @@ YELLOW = np.array([255, 255, 0])
 WHITE = np.array([255, 255, 255])
 
 def simplify_colors(img):
-    """Returns and image with GREEN and YELLOW pixels made black, GRAY pixels WHITE."""
+    """Returns and image with GREEN and YELLOW pixels made black, GRAY pixels
+    WHITE. Destructively modifies img."""
     img[(img == GREEN).all(axis = 2)] = BLACK
     img[(img == YELLOW).all(axis = 2)] = BLACK
     img[(img == GRAY).all(axis = 2)] = WHITE
@@ -41,11 +42,24 @@ def simplify_colors(img):
     
 def simplify_images(in_dir, out_dir):
     """Writes similified versions of all images in in_dir to out_dir.
-    Creates out_dir if necessary."""
+    Creates out_dir if necessary. Returns an array of relative
+    frequencies of BLUE, WHITE, and BLACK."""
     os.mkdir(out_dir)
+    counts = np.zeros(2, dtype=np.int)
     for file in os.listdir(in_dir):
         img = misc.imread(in_dir + file)
-        Image.fromarray(simplify_colors(img)).save(out_dir + file)
+        simplified = simplify_colors(img)
+        counts = counts + color_counts(simplified)
+        Image.fromarray(simplified.save(out_dir + file))
+    return counts / counts.sum()
+
+def color_counts(img):
+    """Returns an array of the number of BLUE, WHITE, and BLACK pixels
+    in img."""
+    blue = (img == BLUE).all(axis = 2).sum()
+    white = (img == WHITE).all(axis = 2).sum()
+    black = (img == BLACK).all(axis = 2).sum()
+    return np.array([blue, white, black])
     
 if __name__ == '__main__':
-    pass
+    print(simplify_images('data/masks', 'data/simplified_masks'))
