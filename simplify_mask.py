@@ -5,8 +5,6 @@ Created on Thu May 18 10:23:23 2017
 
 @author: drake
 """
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import numpy as np
 from scipy import misc
 import os
@@ -41,16 +39,20 @@ def simplify_colors(img):
     """Does the same for YELLOW values"""
     mask = (img == YELLOW).all(axis = 2)
     img[mask == True] = BLACK
+    """Does the same for YELLOW values"""
+    mask = (img == GRAY).all(axis = 2)
+    img[mask == True] = WHITE
     return img
     
-def simplify_images(path):
-    dir_name = "simple_masks/"
-    os.mkdir(dir_name)
-    for file in os.listdir(path):
-        img = misc.imread(path + file)
+def simplify_images(in_dir, out_dir):
+    """Writes similified versions of all images in in_dir to out_dir.
+    Creates out_dir if necessary."""
+    os.mkdir(out_dir)
+    for file in os.listdir(in_dir):
+        img = misc.imread(in_dir + file)
         new_img = simplify_colors(img)
         im = Image.fromarray(new_img)
-        im.save(dir_name + file)
+        im.save(out_dir + file)
     
 if __name__ == '__main__':
-    path = ("data/masks/")
+    pass

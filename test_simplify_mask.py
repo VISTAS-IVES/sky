@@ -27,20 +27,11 @@ class TestSimplifyMask(unittest.TestCase):
         self.assertTrue((colors == correct).all())
     
     def test_simplify_colors(self):
-        # Colors from mask images
-        """
-        BLACK = np.array([0, 0, 0])
-        BLUE = np.array([0, 0, 255])
-        GREEN = np.array([0, 255, 0])
-        GRAY = np.array([192, 192, 192])
-        YELLOW = np.array([255, 255, 0])
-        WHITE = np.array([255, 255, 255])
-        """
         img = np.array([[BLACK, BLUE, GREEN],
                         [GRAY, YELLOW, WHITE]])
         colors = simplify_mask.simplify_colors(img)
         correct = np.array([[BLACK, BLUE, BLACK],
-                          [GRAY, BLACK, WHITE]])
+                          [WHITE, BLACK, WHITE]])
         self.assertTrue((colors == correct).all())
 
 if __name__ == '__main__':
