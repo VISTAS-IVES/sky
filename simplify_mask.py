@@ -33,15 +33,10 @@ YELLOW = np.array([255, 255, 0])
 WHITE = np.array([255, 255, 255])
 
 def simplify_colors(img):
-    """Makes a mask of the image to find GREEN values, then removes them"""
-    mask = (img == GREEN).all(axis = 2)
-    img[mask == True] = BLACK
-    """Does the same for YELLOW values"""
-    mask = (img == YELLOW).all(axis = 2)
-    img[mask == True] = BLACK
-    """Does the same for YELLOW values"""
-    mask = (img == GRAY).all(axis = 2)
-    img[mask == True] = WHITE
+    """Returns and image with GREEN and YELLOW pixels made black, GRAY pixels WHITE."""
+    img[(img == GREEN).all(axis = 2)] = BLACK
+    img[(img == YELLOW).all(axis = 2)] = BLACK
+    img[(img == GRAY).all(axis = 2)] = WHITE
     return img
     
 def simplify_images(in_dir, out_dir):
@@ -50,9 +45,7 @@ def simplify_images(in_dir, out_dir):
     os.mkdir(out_dir)
     for file in os.listdir(in_dir):
         img = misc.imread(in_dir + file)
-        new_img = simplify_colors(img)
-        im = Image.fromarray(new_img)
-        im.save(out_dir + file)
+        Image.fromarray(simplify_colors(img)).save(out_dir + file)
     
 if __name__ == '__main__':
     pass
