@@ -30,6 +30,22 @@ GRAY = np.array([192, 192, 192])
 YELLOW = np.array([255, 255, 0])
 WHITE = np.array([255, 255, 255])
 
+
+def simplify_colors(img):
+    """Makes a mask of the image to find GREEN values, then removes them"""
+    mask = (img == GREEN).all(axis = 2)
+    img[mask == True] = BLACK
+    
+    """Does the same for YELLOW values"""
+    mask = (img == YELLOW).all(axis = 2)
+    img[mask == True] = BLACK
+  
+    print (img)
+    return img
+    
+
+
+    
 if __name__ == '__main__':
     img = misc.imread('data/masks/sgptsicldmaskC1.a1.20160414.173800.png.20160414173800.png')
     print(list_colors(img))
