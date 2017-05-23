@@ -12,16 +12,23 @@ from scipy import misc
 import os
 from PIL import Image
 import tensorflow as tf
-    
+  
+#define colors
+BLACK = np.array([0, 0, 0])
+BLUE = np.array([0, 0, 255])
+WHITE = np.array([255, 255, 255])  
     
 def mask_to_one_hot(img):
-    BLACK = np.array([0, 0, 0])
-    BLUE = np.array([0, 0, 255])
-    WHITE = np.array([255, 255, 255])
-
     img[(img == WHITE).all(axis = 2)] = [1,0,0]
     img[(img == BLUE).all(axis = 2)]  = [0,1,0]
     img[(img == BLACK).all(axis = 2)] = [0,0,1]
+    
+    return img
+
+def one_hot_to_mask(img):
+    img[(img == [1,0,0]).all(axis = 2)] = WHITE
+    img[(img == [0,1,0]).all(axis = 2)] = BLUE
+    img[(img == [0,0,1]).all(axis = 2)] = BLACK
     return img
 
 def weight_variable(shape):
@@ -37,8 +44,8 @@ def conv2d(x, W):
 
 if __name__ == '__main__':
     # Get image and make the mask into a one-hotted mask
-    inputs = misc.imread('data/images/sgptsiskyimageC1.a1.20160415.190030.jpg.20160415190030.jpg')
-    correct = mask_to_one_hot(misc.imread('data/simplified_masks/sgptsicldmaskC1.a1.20160415.190030.png.20160415190030.png'))
+    inputs = misc.imread('data/images/sgptsiskyimageC1.a1.20160414.162830.jpg.20160414162830.jpg')
+    correct = mask_to_one_hot(misc.imread('data/simplified_masks/sgptsicldmaskC1.a1.20160414.162830.png.20160414162830.png'))
     inputs = inputs.reshape(1, 640, 480, 3)
     correct = correct.reshape(1, 640, 480, 3)
     # Define the network
