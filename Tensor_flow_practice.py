@@ -44,16 +44,17 @@ def conv2d(x, W):
 
 if __name__ == '__main__':
     # Get image and make the mask into a one-hotted mask
-    inputs = misc.imread('data/images/sgptsiskyimageC1.a1.20160414.162830.jpg.20160414162830.jpg')
+    inputs = misc.imread('data/simplified_images/sgptsiskyimageC1.a1.20160414.162830.jpg.20160414162830.jpg')
     correct = mask_to_one_hot(misc.imread('data/simplified_masks/sgptsicldmaskC1.a1.20160414.162830.png.20160414162830.png'))
-    inputs = inputs.reshape(1, 640, 480, 3)
-    correct = correct.reshape(1, 640, 480, 3)
+    inputs = inputs.reshape(1, 480, 480, 3)
+    correct = correct.reshape(-1, 3)
     # Define the network
-    x = tf.placeholder(tf.float32, [None, 640, 480, 3])
+    x = tf.placeholder(tf.float32, [None, 480, 480, 3])
     W = weight_variable([3, 3, 3, 3])
     b = bias_variable([3])
-    y = tf.nn.relu(conv2d(x, W) + b)
-    y_ = tf.placeholder(tf.float32, [None, 640, 480, 3])
+    h = tf.nn.relu(conv2d(x, W) + b)
+    y = tf.reshape(h, [-1, 3])
+    y_ = tf.placeholder(tf.float32, [None, 3])
     # Is this minimizing across every output channel, pixel, and image?
     # Is that what we want?
     cross_entropy = tf.reduce_mean(
