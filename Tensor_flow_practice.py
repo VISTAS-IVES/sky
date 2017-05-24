@@ -12,7 +12,6 @@ from scipy import misc
 import os
 from PIL import Image
 import tensorflow as tf
-  
 #define colors
 BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
@@ -24,17 +23,30 @@ def mask_to_one_hot(img):
     img[(img == BLACK).all(axis = 2)] = np.array([0,0,1])
     
     return img
-
+"""
 def one_hot_to_mask(img):
     img[(img == np.array([1,0,0])).all(axis = 2)] = WHITE
     img[(img == np.array([0,1,0])).all(axis = 2)] = BLUE
     img[(img == np.array([0,0,1])).all(axis = 2)] = BLACK
     return img
+"""
+def make_true_one_hot(output):
+    #takes the out out and converts it into one-hots made of integers
+    maxs = np.argmax(output, axis = 2)
+    return maxs
+
+def one_hot_to_mask(max_indexs, output):
+    
+    output[(max_indexs == 0)] = WHITE
+    output[(max_indexs == 1)] = BLUE
+    output[(max_indexs == 2)] = BLACK
+    return output
 
 def out_to_image(output):
     #takes the output of one-hot vectors and converts it into an RGB image
     output = output.reshape([480,480,3])
-    output = one_hot_to_mask(output)
+    max_indexes = make_true_one_hot(output)
+    output = one_hot_to_mask(max_indexes, output)
     return output
 
 def weight_variable(shape):
@@ -50,6 +62,7 @@ def conv2d(x, W):
 
 if __name__ == '__main__':
     # Get image and make the mask into a one-hotted mask
+    print ("am here")
     inputs = misc.imread('data/simplified_images/sgptsiskyimageC1.a1.20160414.162830.jpg.20160414162830.jpg')
     print(inputs.shape)
     correct = mask_to_one_hot(misc.imread('data/simplified_masks/sgptsicldmaskC1.a1.20160414.162830.png.20160414162830.png'))
@@ -79,7 +92,7 @@ if __name__ == '__main__':
     # Train
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
-    for i in range(1000):
+    for i in range(2000):
 #        batch = mnist.train.next_batch(50)
         if i%100 == 0:
             train_accuracy = sess.run(accuracy, feed_dict={
@@ -91,17 +104,11 @@ if __name__ == '__main__':
 
     output =  (sess.run(out, feed_dict={x: inputs}))
     print (type(output))
-    output = output.astype(int)
     output = out_to_image(output)
     print (type(output))
-    #print (output.shape)
-    #int_output = output.astype(int)
-    #print (int_output)
-    #print (np.where(output > 255))
+
     Image.fromarray(output.astype('uint8')).show()
 
-    #Image.fromarray(output).show()
-    
 #        train_step.run(feed_dict={x: batch[0], y_: batch[1]})
     # Test    
 #    accuracy = sess.run(accuracy, feed_dict={
