@@ -11,12 +11,23 @@ import numpy as np
 from scipy import misc
 from PIL import Image
 import tensorflow as tf
+import os
+import shutil
 
 # Define colors
 BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])  
+
+def make_random_sample(size, in_dir = "data/simplified_images/", out_dir = "data/image_sample/"):
+    """Puts a random set of images and masks into the directories test_images and test_masks respectively"""
+    files = np.array(os.listdir(in_dir))
+    rand_indices = np.random.randint(0,high = len(files),size = size)
+    files = np.take(files,rand_indices)
+    for f in files:
+        shutil.copy(in_dir + f, out_dir + f)
     
+
 def mask_to_one_hot(img):
     """Modifies (and returns) img to have a one-hot vector for each
     pixel."""
@@ -45,10 +56,34 @@ def one_hot_to_mask(max_indexs, output):
 def out_to_image(output):
     """Modifies (and returns) the output of the network as a human-readable
     RGB image."""
-    output = output.reshape([480,480,3])
+    output = output.reshape([100,480,480,3])[6]
+    outs = output
+    print (outs.shape)
     # We use argmax instead of softmax so that we really will get one-hots
-    max_indexes = np.argmax(output, axis = 2)
-    return one_hot_to_mask(max_indexes, output)
+    max_indexes = np.argmax(outs, axis = 2)
+    return one_hot_to_mask(max_indexes, outs)
+
+def get_inputs(in_dir):
+    print ("reading in images from " + in_dir)
+    files = np.take(np.array(os.listdir(in_dir)), np.arange(100))
+    index = np.argwhere(files[-3:] == "jpg")
+    files = np.delete(files, index)
+    inputs = np.empty((len(files), 480, 480, 3))
+    for i in range(len(files)):  
+        inputs[i] = np.array(misc.imread(in_dir + files[i]))
+    return inputs
+
+
+def get_masks(in_dir):
+    print ("reading in masks from " + in_dir)
+    files = np.take(np.array(os.listdir(in_dir)), np.arange(100))
+    index = np.argwhere(files[-3:] == "png")
+    files = np.delete(files, index)
+    masks = np.empty((len(files), 480, 480))
+    for i in range(len(files)):  
+        masks[i] = mask_to_index(np.array(misc.imread(in_dir + files[i])))
+    masks = masks.reshape([-1])
+    return masks
 
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
@@ -63,11 +98,12 @@ def conv2d(x, W):
 
 if __name__ == '__main__':
     # Get image and make the mask into a one-hotted mask
-    inputs = misc.imread('data/simplified_images/sgptsiskyimageC1.a1.20160414.162830.jpg.20160414162830.jpg')
-    inputs = inputs.reshape(1, 480, 480, 3)
-    correct = mask_to_index(misc.imread('data/simplified_masks/sgptsicldmaskC1.a1.20160414.162830.png.20160414162830.png'))
-    correct = correct.reshape([-1])
+    inputs = get_inputs("data/simplified_images/")
+    correct = get_masks("data/simplified_masks/")
+#    correct = mask_to_index(misc.imread('data/simplified_masks/sgptsicldmaskC1.a1.20160414.162830.png.20160414162830.png'))
+#    correct = correct.reshape([-1])
     # Define the network
+    print ("starting to do network")
     tf.reset_default_graph()
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
     W = weight_variable([3, 3, 3, 3])
@@ -84,12 +120,14 @@ if __name__ == '__main__':
     # Train
     with tf.Session() as sess:
         init.run()
-        for i in range(2000):
+        for i in range(6):
     #        batch = mnist.train.next_batch(50)
-            if i % 100 == 0:
+            if i % 1 == 0:
                 train_accuracy = accuracy.eval(feed_dict={
                         x:inputs, y_: correct})
                 print("step %d, training accuracy %g"%(i, train_accuracy))
+                
             train_step.run(feed_dict={x: inputs, y_: correct})
+        
         img = out_to_image(y.eval(feed_dict={x: inputs}))
         Image.fromarray(img.astype('uint8')).show()
