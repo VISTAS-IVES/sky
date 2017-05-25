@@ -9,7 +9,8 @@ import numpy as np
 from scipy import misc
 import os
 from PIL import Image
-
+import shutil
+from pathlib import Path
 
 def list_colors(img):
     """Returns an array of the unique colors in img."""
@@ -76,7 +77,30 @@ def color_counts(img):
     white = (img == WHITE).all(axis = 2).sum()
     black = (img == BLACK).all(axis = 2).sum()
     return np.array([blue, white, black])
+
+def make_random_sample(size, in1 = "data/simplified_images/20160414/", out1 = "data/simplified_images/test/",
+                       in2 = "data/simplified_masks/20160414/", out2 = "data/simplified_masks/test/"):
+    """Copies a random set of size files from in1 to out1 and a corresponding set from
+    in2 to out2."""
+    files = np.array(os.listdir(in1))
+    rand_indices = np.random.randint(0,high = len(files),size = size)
+    files = np.take(files,rand_indices)
+    for f in files:
+        shutil.copy(in1 + f, out1 + f)
+    files = np.take(np.array(os.listdir(in2)), rand_indices)
+    for f in files:
+        shutil.copy(in2 + f, out2 + f)
+
+def find_failed_correspondences(images='data/images/20160415/', masks='data/masks/20160415/'):
+    """Prints names of images files that do not have matching mask files."""
+    for f in os.listdir(images):
+        date = f[40:48]
+        time = f[48:54]
+        g = Path(masks + "sgptsicldmaskC1.a1." + date + "." + time + ".png." + date + time + ".png")
+        if not g.is_file():
+            print (f)
+            Path(images + f).unlink()
     
 if __name__ == '__main__':
-    print (simplify_images('data/images/20160414/', 'data/simplified_images/20160414/'))
-    print (simplify_masks('data/masks/20160414/', 'data/simplified_masks/20160414/'))
+    print (simplify_images('data/images/20160415/', 'data/simplified_images/20160415/'))
+    print (simplify_masks('data/masks/20160415/', 'data/simplified_masks/20160415/'))

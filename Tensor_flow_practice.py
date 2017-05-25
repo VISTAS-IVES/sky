@@ -12,21 +12,11 @@ from scipy import misc
 from PIL import Image
 import tensorflow as tf
 import os
-import shutil
 
 # Define colors
 BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])  
-
-def make_random_sample(size, in_dir = "data/simplified_images/", out_dir = "data/image_sample/"):
-    """Puts a random set of images and masks into the directories test_images and test_masks respectively"""
-    files = np.array(os.listdir(in_dir))
-    rand_indices = np.random.randint(0,high = len(files),size = size)
-    files = np.take(files,rand_indices)
-    for f in files:
-        shutil.copy(in_dir + f, out_dir + f)
-    
 
 def mask_to_one_hot(img):
     """Modifies (and returns) img to have a one-hot vector for each
@@ -98,8 +88,8 @@ def conv2d(x, W):
 
 if __name__ == '__main__':
     # Get image and make the mask into a one-hotted mask
-    inputs = get_inputs("data/simplified_images/")
-    correct = get_masks("data/simplified_masks/")
+    inputs = get_inputs("data/simplified_images/20160414/")
+    correct = get_masks("data/simplified_masks/20160414/")
 #    correct = mask_to_index(misc.imread('data/simplified_masks/sgptsicldmaskC1.a1.20160414.162830.png.20160414162830.png'))
 #    correct = correct.reshape([-1])
     # Define the network
