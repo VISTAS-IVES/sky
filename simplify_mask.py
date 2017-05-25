@@ -78,5 +78,5 @@ def color_counts(img):
     return np.array([blue, white, black])
     
 if __name__ == '__main__':
-    print (simplify_images('data/images/', 'data/simplified_images/'))
-    print (simplify_masks('data/masks/', 'data/simplified_masks/'))
+    print (simplify_images('data/images/20160414/', 'data/simplified_images/20160414/'))
+    print (simplify_masks('data/masks/20160414/', 'data/simplified_masks/20160414/'))
