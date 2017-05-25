@@ -78,8 +78,8 @@ def color_counts(img):
     black = (img == BLACK).all(axis = 2).sum()
     return np.array([blue, white, black])
 
-def make_random_sample(size, in1 = "data/simplified_images/20160414/", out1 = "data/simplified_images/test/",
-                       in2 = "data/simplified_masks/20160414/", out2 = "data/simplified_masks/test/"):
+def make_random_sample(size, in1 = "data/simplified_images/20160414/", out1 = "data/simplified_images/test10/",
+                       in2 = "data/simplified_masks/20160414/", out2 = "data/simplified_masks/test10/"):
     """Copies a random set of size files from in1 to out1 and a corresponding set from
     in2 to out2."""
     files = np.array(os.listdir(in1))
@@ -102,6 +102,6 @@ def find_failed_correspondences(images='data/images/20160415/', masks='data/mask
             print (f)
             Path(images + f).unlink()
     
-if __name__ == '__main__':
-    print (simplify_images('data/images/20160415/', 'data/simplified_images/20160415/'))
-    print (simplify_masks('data/masks/20160415/', 'data/simplified_masks/20160415/'))
+#if __name__ == '__main__':
+#    print (simplify_images('data/images/20160415/', 'data/simplified_images/20160415/'))
+#    print (simplify_masks('data/masks/20160415/', 'data/simplified_masks/20160415/'))

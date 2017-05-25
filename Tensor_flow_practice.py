@@ -5,13 +5,14 @@ Created on Mon May 22 10:20:00 2017
 
 @author: Jeff Mullins, Sean Richardson
 
-Relies heavily on deep MNIST tutorial from TensorFlow.org.
 """
 import numpy as np
 from scipy import misc
 from PIL import Image
 import tensorflow as tf
 import os
+import math
+import time
 
 # Define colors
 BLACK = np.array([0, 0, 0])
@@ -43,12 +44,11 @@ def one_hot_to_mask(max_indexs, output):
     output[(max_indexs == 2)] = BLACK
     return output
 
-def out_to_image(output):
-    """Modifies (and returns) the output of the network as a human-readable
-    RGB image."""
-    output = output.reshape([-1,480,480,3])[42]
+def out_to_image(output, n):
+    """Modifies (and returns) the output of the network for the nth image as a
+    human-readable RGB image."""
+    output = output.reshape([-1,480,480,3])[n]
     outs = output
-    print (outs.shape)
     # We use argmax instead of softmax so that we really will get one-hots
     max_indexes = np.argmax(outs, axis = 2)
     return one_hot_to_mask(max_indexes, outs)
@@ -75,8 +75,8 @@ def get_masks(in_dir):
     masks = masks.reshape([-1])
     return masks
 
-def weight_variable(shape):
-    initial = tf.truncated_normal(shape, stddev=0.1)
+def weight_variable(shape, n_inputs):
+    initial = tf.truncated_normal(shape, stddev=2 / math.sqrt(n_inputs))
     return tf.Variable(initial)
 
 def bias_variable(shape):
@@ -87,16 +87,15 @@ def conv2d(x, W):
     return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
 
 if __name__ == '__main__':
+    start = time.time()
     # Get image and make the mask into a one-hotted mask
-    inputs = get_inputs("data/simplified_images/test/")
-    correct = get_masks("data/simplified_masks/test/")
-#    correct = mask_to_index(misc.imread('data/simplified_masks/sgptsicldmaskC1.a1.20160414.162830.png.20160414162830.png'))
-#    correct = correct.reshape([-1])
+    inputs = get_inputs("data/simplified_images/test10/")
+    correct = get_masks("data/simplified_masks/test10/")
     # Define the network
     print ("starting to do network")
     tf.reset_default_graph()
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
-    W = weight_variable([3, 3, 3, 3])
+    W = weight_variable([3, 3, 3, 3], 3 * 3 * 3)
     b = bias_variable([3])
     h = tf.nn.relu(conv2d(x, W) + b)
     y = tf.reshape(h, [-1, 3])
@@ -110,14 +109,16 @@ if __name__ == '__main__':
     # Train
     with tf.Session() as sess:
         init.run()
-        for i in range(2000):
+        for i in range(1, 1000 + 1):
     #        batch = mnist.train.next_batch(50)
-            if i % 10 == 0:
+            train_step.run(feed_dict={x: inputs, y_: correct})
+            if i % 100 == 0:
                 train_accuracy = accuracy.eval(feed_dict={
                         x:inputs, y_: correct})
-                print("step %d, training accuracy %g"%(i, train_accuracy))
-                
-            train_step.run(feed_dict={x: inputs, y_: correct})
-        
-        img = out_to_image(y.eval(feed_dict={x: inputs}))
-        Image.fromarray(img.astype('uint8')).show()
+                print("step %d, training accuracy %g"%(i, train_accuracy))                
+                img = out_to_image(y.eval(feed_dict={x: inputs}), 3)
+                img = Image.fromarray(img.astype('uint8'))
+                img.save('data/out_masks/output-' + str(i).zfill(6) + '.png')
+    stop = time.time()
+    print('Elapsed time: {} seconds'.format(stop - start))
+
