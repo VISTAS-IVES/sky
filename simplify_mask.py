@@ -92,8 +92,8 @@ def make_random_sample(size, in1 = "data/simplified_images/20160414/", out1 = "d
     for f in files:
         shutil.copy(in2 + f, out2 + f)
 
-def find_failed_correspondences(images='data/images/20160415/', masks='data/masks/20160415/'):
-    """Prints names of images files that do not have matching mask files."""
+def remove_failed_correspondences(images='data/images/20160414/', masks='data/masks/20160414/'):
+    """Deletes image files that do not have matching mask files."""
     for f in os.listdir(images):
         date = f[40:48]
         time = f[48:54]
@@ -102,6 +102,6 @@ def find_failed_correspondences(images='data/images/20160415/', masks='data/mask
             print (f)
             Path(images + f).unlink()
     
-#if __name__ == '__main__':
-#    print (simplify_images('data/images/20160415/', 'data/simplified_images/20160415/'))
-#    print (simplify_masks('data/masks/20160415/', 'data/simplified_masks/20160415/'))
+if __name__ == '__main__':
+    print (simplify_images('data/images/20160414/', 'data/simplified_images/20160414/'))
+    print (simplify_masks('data/masks/20160414/', 'data/simplified_masks/20160414/'))
