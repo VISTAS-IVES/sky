@@ -83,7 +83,8 @@ def make_random_sample(size, in1 = "data/simplified_images/20160414/", out1 = "d
     """Copies a random set of size files from in1 to out1 and a corresponding set from
     in2 to out2."""
     files = np.array(os.listdir(in1))
-    rand_indices = np.random.randint(0,high = len(files),size = size)
+    rand_indices = np.random.choice(range(len(files)), size, replace=False)
+#    rand_indices = np.random.randint(0,high = len(files),size = size)
     files = np.take(files,rand_indices)
     for f in files:
         shutil.copy(in1 + f, out1 + f)

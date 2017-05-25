@@ -46,7 +46,7 @@ def one_hot_to_mask(max_indexs, output):
 def out_to_image(output):
     """Modifies (and returns) the output of the network as a human-readable
     RGB image."""
-    output = output.reshape([100,480,480,3])[6]
+    output = output.reshape([-1,480,480,3])[42]
     outs = output
     print (outs.shape)
     # We use argmax instead of softmax so that we really will get one-hots
@@ -55,7 +55,7 @@ def out_to_image(output):
 
 def get_inputs(in_dir):
     print ("reading in images from " + in_dir)
-    files = np.take(np.array(os.listdir(in_dir)), np.arange(100))
+    files = np.array(os.listdir(in_dir))
     index = np.argwhere(files[-3:] == "jpg")
     files = np.delete(files, index)
     inputs = np.empty((len(files), 480, 480, 3))
@@ -66,7 +66,7 @@ def get_inputs(in_dir):
 
 def get_masks(in_dir):
     print ("reading in masks from " + in_dir)
-    files = np.take(np.array(os.listdir(in_dir)), np.arange(100))
+    files = np.array(os.listdir(in_dir))
     index = np.argwhere(files[-3:] == "png")
     files = np.delete(files, index)
     masks = np.empty((len(files), 480, 480))
@@ -88,8 +88,8 @@ def conv2d(x, W):
 
 if __name__ == '__main__':
     # Get image and make the mask into a one-hotted mask
-    inputs = get_inputs("data/simplified_images/20160414/")
-    correct = get_masks("data/simplified_masks/20160414/")
+    inputs = get_inputs("data/simplified_images/test/")
+    correct = get_masks("data/simplified_masks/test/")
 #    correct = mask_to_index(misc.imread('data/simplified_masks/sgptsicldmaskC1.a1.20160414.162830.png.20160414162830.png'))
 #    correct = correct.reshape([-1])
     # Define the network
@@ -110,9 +110,9 @@ if __name__ == '__main__':
     # Train
     with tf.Session() as sess:
         init.run()
-        for i in range(6):
+        for i in range(2000):
     #        batch = mnist.train.next_batch(50)
-            if i % 1 == 0:
+            if i % 10 == 0:
                 train_accuracy = accuracy.eval(feed_dict={
                         x:inputs, y_: correct})
                 print("step %d, training accuracy %g"%(i, train_accuracy))
