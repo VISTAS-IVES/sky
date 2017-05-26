@@ -12,6 +12,14 @@ from PIL import Image
 import shutil
 from pathlib import Path
 
+def simplify_name(filename):
+    """Simplifies the filenames we get from arm.gov."""
+    return filename[6:filename.index('C1')] + filename[-18:]
+
+def simplify_all_names(dir):
+    for f in os.listdir(dir):
+        os.rename(dir + f, dir + simplify_name(f))
+    
 def list_colors(img):
     """Returns an array of the unique colors in img."""
     # Adapted from http://stackoverflow.com/questions/16970982/find-unique-rows-in-numpy-array

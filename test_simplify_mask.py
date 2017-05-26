@@ -40,6 +40,14 @@ class TestSimplifyMask(unittest.TestCase):
         probs = simplify_mask.color_counts(img)
         correct = np.array([1, 2, 3])
         self.assertTrue((probs == correct).all())
+    
+    def test_simplify_name_skyimage(self):
+        f = 'sgptsiskyimageC1.a1.20160414.235930.jpg.20160414235930.jpg'
+        self.assertEqual(simplify_mask.simplify_name(f), 'skyimage20160414235930.jpg')
+        
+    def test_simplify_name_cldmask(self):
+        f = 'sgptsicldmaskC1.a1.20160414.235930.png.20160414235930.png'
+        self.assertEqual(simplify_mask.simplify_name(f), 'cldmask20160414235930.png')
         
 if __name__ == '__main__':
     unittest.main()
