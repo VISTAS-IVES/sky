@@ -118,14 +118,14 @@ def separate_stamps(stamps):
     train = stamps[int(len(stamps)*0.36):]
     return test, valid, train
 
-def separate_data(dir):
-    stamps = [int(f[-18:-4]) for f in os.listdir(dir)]
+def separate_data(in_dir, out_dir):
+    stamps = [int(f[-18:-4]) for f in os.listdir(in_dir)]
     test, valid, train = separate_stamps(stamps)
-    with open(dir + "test.stamps", "wb") as f:
+    with open(out_dir + "test.stamps", "wb") as f:
         pickle.dump(test, f)
-    with open(dir + "valid.stamps", "wb") as f:
+    with open(out_dir + "valid.stamps", "wb") as f:
         pickle.dump(valid, f)
-    with open(dir + "train.stamps", "wb") as f:
+    with open(out_dir + "train.stamps", "wb") as f:
         pickle.dump(train, f)
     
 #if __name__ == '__main__':
