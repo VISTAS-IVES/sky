@@ -95,7 +95,7 @@ def crop_image(img):
 
 def simplify_images():
     """Crops the images in in_dir down to 480x480 and writes those to out_dir
-    and resturns the number of images cropped"""
+    and returns the number of images cropped"""
     counts = 0
     for file in os.listdir('skyimage/'):
         if file[0] != '.':
@@ -149,4 +149,28 @@ def separate_data():
         pickle.dump(valid, f)
     with open('train.stamps', 'wb') as f:
         pickle.dump(train, f)
+    return test, valid, train
 
+if __name__ == '__main__':
+    before = os.getcwd()
+    os.chdir('data')
+    print('Creating directories')
+    create_dirs()
+    print('Unpacking tars')
+    unpack_all_tars()
+    print('Simplifying names')
+    simplify_all_names()
+    print('Removing images without masks')
+    remove_images_without_matching_masks()
+    print('Simplifying images')
+    print(str(simplify_images()) + ' images processed')
+    print('Simplifying masks')    
+    print('[Blue, White, Black] = ' + str(simplify_masks()))
+    print('Separating data') 
+    test, valid, train = separate_data()
+    print(str(len(test)) + ' test cases; ' + 
+          str(len(valid)) + ' validation cases; ' + 
+          str(len(train)) + ' training cases.')
+    os.chdir(before)
+    print('Done')
+    
