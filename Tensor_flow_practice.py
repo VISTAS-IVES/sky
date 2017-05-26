@@ -13,6 +13,8 @@ import tensorflow as tf
 import os
 import math
 import time
+import random
+import pickle
 
 # Define colors
 BLACK = np.array([0, 0, 0])
@@ -53,27 +55,17 @@ def out_to_image(output, n):
     max_indexes = np.argmax(outs, axis = 2)
     return one_hot_to_mask(max_indexes, outs)
 
-def get_inputs(in_dir):
-    print ("reading in images from " + in_dir)
-    files = np.array(os.listdir(in_dir))
-    index = np.argwhere(files[-3:] == "jpg")
-    files = np.delete(files, index)
-    inputs = np.empty((len(files), 480, 480, 3))
-    for i in range(len(files)):  
-        inputs[i] = np.array(misc.imread(in_dir + files[i]))
+def get_inputs(stamps):
+    inputs = np.empty((len(stamps), 480, 480, 3))
+    for i, s in enumerate(stamps):  
+        inputs[i] = np.array(misc.imread('data/simpleimage/simpleimage' + str(s) + '.jpg'))
     return inputs
 
-
-def get_masks(in_dir):
-    print ("reading in masks from " + in_dir)
-    files = np.array(os.listdir(in_dir))
-    index = np.argwhere(files[-3:] == "png")
-    files = np.delete(files, index)
-    masks = np.empty((len(files), 480, 480))
-    for i in range(len(files)):  
-        masks[i] = mask_to_index(np.array(misc.imread(in_dir + files[i])))
-    masks = masks.reshape([-1])
-    return masks
+def get_masks(stamps):
+    masks = np.empty((len(stamps), 480, 480))
+    for i, s in enumerate(stamps):  
+        masks[i] = mask_to_index(np.array(misc.imread('data/simplemask/simplemask' + str(s) + '.png')))
+    return masks.reshape((-1))
 
 def weight_variable(shape, n_inputs):
     initial = tf.truncated_normal(shape, stddev=2 / math.sqrt(n_inputs))
@@ -85,14 +77,19 @@ def bias_variable(shape):
 
 def conv2d(x, W):
     return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
-
+    
 if __name__ == '__main__':
     start = time.time()
     # Get image and make the mask into a one-hotted mask
-    inputs = get_inputs("data/simplified_images/20160414/")
-    correct = get_masks("data/simplified_masks/20160414/")
+    with open('data/train.stamps', 'rb') as f:
+        train_stamps = pickle.load(f)
+    with open('data/valid.stamps', 'rb') as f:
+        valid_stamps = pickle.load(f)
+    valid_stamps = random.sample(valid_stamps, 10)
+    valid_inputs = get_inputs(valid_stamps)
+    valid_correct = get_masks(valid_stamps)
     # Define the network
-    print ("starting to do network")
+    print ("Building network")
     tf.reset_default_graph()
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
     W = weight_variable([3, 3, 3, 3], 3 * 3 * 3)
@@ -109,16 +106,21 @@ if __name__ == '__main__':
     # Train
     with tf.Session() as sess:
         init.run()
+        print('Step\tTrain\tValid')
         for i in range(1, 1000 + 1):
-    #        batch = mnist.train.next_batch(50)
+            batch = random.sample(train_stamps, 10)
+            inputs = get_inputs(batch)
+            correct = get_masks(batch)
             train_step.run(feed_dict={x: inputs, y_: correct})
             if i % 10 == 0:
                 train_accuracy = accuracy.eval(feed_dict={
-                        x:inputs, y_: correct})
-                print("step %d, training accuracy %g"%(i, train_accuracy))                
-                img = out_to_image(y.eval(feed_dict={x: inputs}), 587)
-                img = Image.fromarray(img.astype('uint8'))
-                img.save('data/out_masks/output-' + str(i).zfill(6) + '.png')
+                        x:inputs, y_:correct})
+                valid_accuracy = accuracy.eval(feed_dict={
+                        x:valid_inputs, y_:valid_correct})
+                print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy))
+#                img = out_to_image(y.eval(feed_dict={x: inputs}), 7)
+#                img = Image.fromarray(img.astype('uint8'))
+#                img.save('data/out_masks/output-' + str(i).zfill(6) + '.png')
     stop = time.time()
     print('Elapsed time: {} seconds'.format(stop - start))
 
