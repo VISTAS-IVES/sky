@@ -85,7 +85,7 @@ if __name__ == '__main__':
         train_stamps = pickle.load(f)
     with open('data/valid.stamps', 'rb') as f:
         valid_stamps = pickle.load(f)
-    valid_stamps = random.sample(valid_stamps, 50)
+    valid_stamps = valid_stamps[:50]
     valid_inputs = get_inputs(valid_stamps)
     valid_correct = get_masks(valid_stamps)
     # Define the network
