@@ -49,5 +49,13 @@ class TestSimplifyMask(unittest.TestCase):
         f = 'sgptsicldmaskC1.a1.20160414.235930.png.20160414235930.png'
         self.assertEqual(simplify_mask.simplify_name(f), 'cldmask20160414235930.png')
         
+    def test_separate_data(self):
+        data = list(range(100))
+        numbers = simplify_mask.separate_data(data)
+        # This will fail in the rare event that shuffling does nothing
+        self.assertNotEqual(numbers, list(range(100)))
+        numbers.sort() # For equality testing below
+        self.assertEqual(numbers, list(range(100)))
+        
 if __name__ == '__main__':
     unittest.main()

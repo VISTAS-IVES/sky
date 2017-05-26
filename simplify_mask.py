@@ -11,6 +11,7 @@ import os
 from PIL import Image
 import shutil
 from pathlib import Path
+import random
 
 def simplify_name(filename):
     """Simplifies the filenames we get from arm.gov."""
@@ -108,6 +109,10 @@ def remove_failed_correspondences(images='data/images/20160414/', masks='data/ma
         if not g.is_file():
             print (f)
             Path(images + f).unlink()
+            
+def separate_data(stamps):
+    random.shuffle(stamps)
+    return stamps
     
 #if __name__ == '__main__':
 #    print (simplify_images('data/images/20160415/', 'data/simplified_images/20160415/'))
