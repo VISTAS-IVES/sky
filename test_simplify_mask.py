@@ -49,7 +49,7 @@ class TestSimplifyMask(unittest.TestCase):
         f = 'sgptsicldmaskC1.a1.20160414.235930.png.20160414235930.png'
         self.assertEqual(simplify_mask.simplify_name(f), 'cldmask20160414235930.png')
         
-    def test_separate_data(self):
+    def test_separate_stamps(self):
         data = list(range(100))
         test, valid, train = simplify_mask.separate_data(data)
         self.assertEqual(len(test), 20)
