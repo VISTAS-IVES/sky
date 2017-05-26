@@ -85,7 +85,7 @@ if __name__ == '__main__':
         train_stamps = pickle.load(f)
     with open('data/valid.stamps', 'rb') as f:
         valid_stamps = pickle.load(f)
-    valid_stamps = valid_stamps[:250]
+    valid_stamps = valid_stamps[:100]
     valid_inputs = get_inputs(valid_stamps)
     valid_correct = get_masks(valid_stamps)
     # Define the network
@@ -107,8 +107,8 @@ if __name__ == '__main__':
     with tf.Session() as sess:
         init.run()
         print('Step\tTrain\tValid')
-        for i in range(1, 10000 + 1):
-            batch = random.sample(train_stamps, 250)
+        for i in range(1, 25000 + 1):
+            batch = random.sample(train_stamps, 100)
             inputs = get_inputs(batch)
             correct = get_masks(batch)
             train_step.run(feed_dict={x: inputs, y_: correct})
