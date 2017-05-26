@@ -107,7 +107,7 @@ if __name__ == '__main__':
     with tf.Session() as sess:
         init.run()
         print('Step\tTrain\tValid')
-        for i in range(1, 1000 + 1):
+        for i in range(1, 100 + 1):
             batch = random.sample(train_stamps, 50)
             inputs = get_inputs(batch)
             correct = get_masks(batch)
