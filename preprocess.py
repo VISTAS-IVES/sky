@@ -48,10 +48,19 @@ def unpack_tar(file, dir):
         except OSError as err:
             continue
 
-def unpack_tars():
+def unpack_all_tars():
     for f in os.listdir('./'):
         if f.endswith('.tar'):
             if 'skyimage' in f:
                 unpack_tar(f, 'skyimage/')
             elif 'cldmask' in f:
                 unpack_tar(f, 'cldmask/')
+
+def simplify_name(filename):
+    """Simplifies the filenames we get from arm.gov."""
+    return filename[6:filename.index('C1')] + filename[-18:]
+
+def simplify_all_names():
+    for dir in ('skyimage/', 'cldmask/'):
+        for f in os.listdir(dir):
+            os.rename(dir + f, dir + simplify_name(f))
