@@ -89,8 +89,8 @@ def conv2d(x, W):
 if __name__ == '__main__':
     start = time.time()
     # Get image and make the mask into a one-hotted mask
-    inputs = get_inputs("data/simplified_images/test10/")
-    correct = get_masks("data/simplified_masks/test10/")
+    inputs = get_inputs("data/simplified_images/20160414/")
+    correct = get_masks("data/simplified_masks/20160414/")
     # Define the network
     print ("starting to do network")
     tf.reset_default_graph()
@@ -112,11 +112,11 @@ if __name__ == '__main__':
         for i in range(1, 1000 + 1):
     #        batch = mnist.train.next_batch(50)
             train_step.run(feed_dict={x: inputs, y_: correct})
-            if i % 100 == 0:
+            if i % 10 == 0:
                 train_accuracy = accuracy.eval(feed_dict={
                         x:inputs, y_: correct})
                 print("step %d, training accuracy %g"%(i, train_accuracy))                
-                img = out_to_image(y.eval(feed_dict={x: inputs}), 3)
+                img = out_to_image(y.eval(feed_dict={x: inputs}), 587)
                 img = Image.fromarray(img.astype('uint8'))
                 img.save('data/out_masks/output-' + str(i).zfill(6) + '.png')
     stop = time.time()
