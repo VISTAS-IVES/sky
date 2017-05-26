@@ -51,7 +51,11 @@ class TestSimplifyMask(unittest.TestCase):
         
     def test_separate_data(self):
         data = list(range(100))
-        numbers = simplify_mask.separate_data(data)
+        test, valid, train = simplify_mask.separate_data(data)
+        self.assertEqual(len(test), 20)
+        self.assertEqual(len(valid), 16)
+        self.assertEqual(len(train), 64)
+        numbers = test + valid + train
         # This will fail in the rare event that shuffling does nothing
         self.assertNotEqual(numbers, list(range(100)))
         numbers.sort() # For equality testing below

@@ -112,7 +112,10 @@ def remove_failed_correspondences(images='data/images/20160414/', masks='data/ma
             
 def separate_data(stamps):
     random.shuffle(stamps)
-    return stamps
+    test = stamps[0:int(len(stamps)*0.2)]
+    valid = stamps[int(len(stamps)*0.2):int(len(stamps)*0.36)]
+    train = stamps[int(len(stamps)*0.36):]
+    return test, valid, train
     
 #if __name__ == '__main__':
 #    print (simplify_images('data/images/20160415/', 'data/simplified_images/20160415/'))
