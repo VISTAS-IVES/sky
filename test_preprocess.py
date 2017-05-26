@@ -7,7 +7,7 @@ Created on Fri May 26 10:45:02 2017
 """
 
 import unittest
-from preprocess import simplify_name
+from preprocess import simplify_name, extract_timestamp
 
 class TestPreprocess(unittest.TestCase):
     
@@ -24,6 +24,10 @@ class TestPreprocess(unittest.TestCase):
     def test_simplify_name_cldmask(self):
         f = 'sgptsicldmaskC1.a1.20160414.235930.png.20160414235930.png'
         self.assertEqual(simplify_name(f), 'cldmask20160414235930.png')
+    
+    def test_extract_timestamp(self):
+        f = 'sgptsicldmaskC1.a1.20160414.235930.png.20160414235930.png'
+        self.assertEqual(extract_timestamp(f), '20160414235930')
         
 if __name__ == '__main__':
     unittest.main()

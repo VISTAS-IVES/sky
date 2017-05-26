@@ -64,3 +64,16 @@ def simplify_all_names():
     for dir in ('skyimage/', 'cldmask/'):
         for f in os.listdir(dir):
             os.rename(dir + f, dir + simplify_name(f))
+
+def extract_timestamp(filename):
+    """Assume filename ends in something like 20160415235930.jpg or
+    20160415235930.png."""
+    return filename[-18:-4]
+    
+def remove_images_without_matching_masks():
+    """Deletes image files that do not have matching mask files."""
+    for f in os.listdir('skyimage/'):
+        g = 'cldmask/cldmask' + extract_timestamp(f) + '.png'
+        if not os.path.isfile(g):
+            os.remove('skyimage/' + f)
+
