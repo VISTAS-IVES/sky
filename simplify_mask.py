@@ -62,7 +62,7 @@ def simplify_masks(in_dir, out_dir):
         img = crop_image(img)
         simplified = simplify_colors(img)
         counts = counts + color_counts(simplified)
-        Image.fromarray(simplified).save(out_dir + file)
+        Image.fromarray(simplified).save(out_dir + 'simplemask' + file[-18:])
     return counts / counts.sum()
 
 def simplify_images(in_dir, out_dir):
@@ -74,9 +74,8 @@ def simplify_images(in_dir, out_dir):
             img = misc.imread(in_dir + file)
             cropped = crop_image(img)
             counts = counts + 1
-            Image.fromarray(cropped).save(out_dir + file)
+            Image.fromarray(cropped).save(out_dir + 'simpleimage' + file[-18:])
     return counts
-
 
 def color_counts(img):
     """Returns an array of the number of BLUE, WHITE, and BLACK pixels
@@ -110,6 +109,6 @@ def remove_failed_correspondences(images='data/images/20160414/', masks='data/ma
             print (f)
             Path(images + f).unlink()
     
-if __name__ == '__main__':
-    print (simplify_images('data/images/20160414/', 'data/simplified_images/20160414/'))
-    print (simplify_masks('data/masks/20160414/', 'data/simplified_masks/20160414/'))
+#if __name__ == '__main__':
+#    print (simplify_images('data/images/20160415/', 'data/simplified_images/20160415/'))
+#    print (simplify_masks('data/masks/20160415/', 'data/simplified_masks/20160415/'))
