@@ -25,6 +25,18 @@ Created on Fri May 26 10:45:02 2017
 
 import os
 import tarfile
+from scipy import misc
+import numpy as np
+from PIL import Image
+import random
+import pickle
+
+BLACK = np.array([0, 0, 0])
+BLUE = np.array([0, 0, 255])
+GREEN = np.array([0, 255, 0])
+GRAY = np.array([192, 192, 192])
+YELLOW = np.array([255, 255, 0])
+WHITE = np.array([255, 255, 255])
 
 def create_dirs():
     os.mkdir('skyimage')
@@ -76,4 +88,65 @@ def remove_images_without_matching_masks():
         g = 'cldmask/cldmask' + extract_timestamp(f) + '.png'
         if not os.path.isfile(g):
             os.remove('skyimage/' + f)
+            
+def crop_image(img):
+    """Crops img down to 480 x 480."""
+    return np.delete(img, np.concatenate((np.arange(80), np.arange(80)+560)), axis=0)
+
+def simplify_images():
+    """Crops the images in in_dir down to 480x480 and writes those to out_dir
+    and resturns the number of images cropped"""
+    counts = 0
+    for file in os.listdir('skyimage/'):
+        if file[0] != '.':
+            img = misc.imread('skyimage/' + file)
+            cropped = crop_image(img)
+            counts = counts + 1
+            Image.fromarray(cropped).save('simpleimage/simpleimage' + extract_timestamp(file) + '.jpg')
+    return counts
+
+def color_counts(img):
+    """Returns an array of the number of BLUE, WHITE, and BLACK pixels
+    in img."""
+    blue = (img == BLUE).all(axis = 2).sum()
+    white = (img == WHITE).all(axis = 2).sum()
+    black = (img == BLACK).all(axis = 2).sum()
+    return np.array([blue, white, black])
+
+def simplify_colors(img):
+    """Returns an image with GREEN and YELLOW pixels made black, GRAY pixels
+    WHITE. Destructively modifies img."""
+    img[(img == GREEN).all(axis = 2)] = BLACK
+    img[(img == YELLOW).all(axis = 2)] = BLACK
+    img[(img == GRAY).all(axis = 2)] = WHITE
+    return img
+
+def simplify_masks():
+    """Writes similified versions of all images in in_dir to out_dir.
+    Returns an array of relative frequencies of BLUE, WHITE, and BLACK."""
+    counts = np.zeros(3, dtype=np.int)
+    for file in os.listdir('cldmask/'):
+        img = misc.imread('cldmask/' + file)
+        img = crop_image(img)
+        simplified = simplify_colors(img)
+        counts = counts + color_counts(simplified)
+        Image.fromarray(simplified).save('simplemask/simplemask' + extract_timestamp(file) + '.png')
+    return counts / counts.sum()
+
+def separate_stamps(stamps):
+    random.shuffle(stamps)
+    test = stamps[0:int(len(stamps)*0.2)]
+    valid = stamps[int(len(stamps)*0.2):int(len(stamps)*0.36)]
+    train = stamps[int(len(stamps)*0.36):]
+    return test, valid, train
+
+def separate_data():
+    stamps = [int(extract_timestamp(f)) for f in os.listdir('simpleimage/')]
+    test, valid, train = separate_stamps(stamps)
+    with open('test.stamps', 'wb') as f:
+        pickle.dump(test, f)
+    with open('valid.stamps', 'wb') as f:
+        pickle.dump(valid, f)
+    with open('train.stamps', 'wb') as f:
+        pickle.dump(train, f)
 
