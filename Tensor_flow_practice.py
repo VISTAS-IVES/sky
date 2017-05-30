@@ -86,17 +86,20 @@ def load_validation_batch():
     valid_correct = get_masks(valid_stamps)
     return valid_inputs, valid_correct
 
+def convo_layer(num_in, num_out, prev):
+    W = weight_variable([3, 3, num_in, num_out], 3 * 3 * num_in)
+    b = bias_variable([num_out])
+    h = tf.nn.relu(conv2d(prev, W) + b)
+    return h
+
 def build_net():
     print ("Building network")
     tf.reset_default_graph()
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
-    W1 = weight_variable([3, 3, 3, 32], 3 * 3 * 3)
-    b1 = bias_variable([32])
-    h1 = tf.nn.relu(conv2d(x, W1) + b1)
-    W2 = weight_variable([3, 3, 32, 3], 3 * 3 * 32)
-    b2 = bias_variable([3])
-    h2 = tf.nn.relu(conv2d(h1, W2) + b2)
-    y = tf.reshape(h2, [-1, 3])
+    h1 = convo_layer(3,32,x)
+    h2 = convo_layer(32,32,h1)
+    h3 = convo_layer(32,3,h2)
+    y = tf.reshape(h3, [-1, 3])
     y_ = tf.placeholder(tf.int64, [None])
     cross_entropy = tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))
