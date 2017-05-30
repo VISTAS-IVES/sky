@@ -77,18 +77,16 @@ def bias_variable(shape):
 
 def conv2d(x, W):
     return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
-    
-if __name__ == '__main__':
-    start = time.time()
-    # Get image and make the mask into a one-hotted mask
-    with open('data/train.stamps', 'rb') as f:
-        train_stamps = pickle.load(f)
+
+def load_validation_batch():
     with open('data/valid.stamps', 'rb') as f:
         valid_stamps = pickle.load(f)
     valid_stamps = valid_stamps[:50]
     valid_inputs = get_inputs(valid_stamps)
     valid_correct = get_masks(valid_stamps)
-    # Define the network
+    return valid_inputs, valid_correct
+
+def build_net():
     print ("Building network")
     tf.reset_default_graph()
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
@@ -107,7 +105,13 @@ if __name__ == '__main__':
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     saver = tf.train.Saver()
     init = tf.global_variables_initializer()
-    # Train
+    return train_step, accuracy, saver, init, x, y, y_
+
+def train_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_correct):
+    start = time.time()
+    # Get image and make the mask into a one-hotted mask
+    with open('data/train.stamps', 'rb') as f:
+        train_stamps = pickle.load(f)
     with tf.Session() as sess:
         init.run()
         print('Step\tTrain\tValid')
@@ -123,9 +127,22 @@ if __name__ == '__main__':
                 valid_accuracy = accuracy.eval(feed_dict={
                         x:valid_inputs, y_:valid_correct})
                 print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy))
-#                img = out_to_image(y.eval(feed_dict={x: inputs}), 7)
-#                img = Image.fromarray(img.astype('uint8'))
-#                img.save('data/out_masks/output-' + str(i).zfill(6) + '.png')
     stop = time.time()
     print('Elapsed time: {} seconds'.format(stop - start))
-
+   
+def test_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_correct, num):
+     # Train
+    with tf.Session() as sess:
+        saver.restore(sess, 'results/weights-' + str(num))
+        valid_accuracy = accuracy.eval(feed_dict={
+                x:valid_inputs, y_:valid_correct})
+        print('{:1.5f}'.format(valid_accuracy))
+        inputs = get_inputs([20160414162830])
+        img = out_to_image(y.eval(feed_dict={x: inputs}), 0)
+        img = Image.fromarray(img.astype('uint8'))
+        img.show()
+#        img.save('data/out_masks/output-' + str(i).zfill(6) + '.png')
+             
+if __name__ == '__main__':
+    train_net(*build_net(), *load_validation_batch())
+#   test_net(*build_net(), *load_validation_batch(), 770)
