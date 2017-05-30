@@ -92,10 +92,10 @@ if __name__ == '__main__':
     print ("Building network")
     tf.reset_default_graph()
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
-    W1 = weight_variable([3, 3, 3, 3], 3 * 3 * 3)
+    W1 = weight_variable([3, 3, 3, 32], 3 * 3 * 3)
     b1 = bias_variable([3])
     h1 = tf.nn.relu(conv2d(x, W1) + b1)
-    W2 = weight_variable([3, 3, 3, 3], 3 * 3 * 3)
+    W2 = weight_variable([3, 3, 32, 3], 3 * 3 * 32)
     b2 = bias_variable([3])
     h2 = tf.nn.relu(conv2d(h1, W2) + b2)
     y = tf.reshape(h2, [-1, 3])
@@ -126,9 +126,6 @@ if __name__ == '__main__':
 #                img = out_to_image(y.eval(feed_dict={x: inputs}), 7)
 #                img = Image.fromarray(img.astype('uint8'))
 #                img.save('data/out_masks/output-' + str(i).zfill(6) + '.png')
-        valid_accuracy = accuracy.eval(feed_dict={
-                x:valid_inputs, y_:valid_correct})
-        print('{}\t{:1.5f}\t{:1.5f}'.format(0, 0, valid_accuracy))
     stop = time.time()
     print('Elapsed time: {} seconds'.format(stop - start))
 
