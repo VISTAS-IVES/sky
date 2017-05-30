@@ -93,7 +93,7 @@ if __name__ == '__main__':
     tf.reset_default_graph()
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
     W1 = weight_variable([3, 3, 3, 32], 3 * 3 * 3)
-    b1 = bias_variable([3])
+    b1 = bias_variable([32])
     h1 = tf.nn.relu(conv2d(x, W1) + b1)
     W2 = weight_variable([3, 3, 32, 3], 3 * 3 * 32)
     b2 = bias_variable([3])
