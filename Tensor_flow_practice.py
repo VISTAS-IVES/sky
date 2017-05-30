@@ -102,17 +102,19 @@ if __name__ == '__main__':
     train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
     correct_prediction = tf.equal(tf.argmax(y,1), y_)
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    saver = tf.train.Saver()
     init = tf.global_variables_initializer()
     # Train
     with tf.Session() as sess:
         init.run()
         print('Step\tTrain\tValid')
-        for i in range(1, 25000 + 1):
+        for i in range(1, 50 + 1):
             batch = random.sample(train_stamps, 100)
             inputs = get_inputs(batch)
             correct = get_masks(batch)
             train_step.run(feed_dict={x: inputs, y_: correct})
             if i % 10 == 0:
+                saver.save(sess, 'results/weights', global_step=i)
                 train_accuracy = accuracy.eval(feed_dict={
                         x:inputs, y_:correct})
                 valid_accuracy = accuracy.eval(feed_dict={
@@ -121,6 +123,9 @@ if __name__ == '__main__':
 #                img = out_to_image(y.eval(feed_dict={x: inputs}), 7)
 #                img = Image.fromarray(img.astype('uint8'))
 #                img.save('data/out_masks/output-' + str(i).zfill(6) + '.png')
+        valid_accuracy = accuracy.eval(feed_dict={
+                x:valid_inputs, y_:valid_correct})
+        print('{}\t{:1.5f}\t{:1.5f}'.format(0, 0, valid_accuracy))
     stop = time.time()
     print('Elapsed time: {} seconds'.format(stop - start))
 
