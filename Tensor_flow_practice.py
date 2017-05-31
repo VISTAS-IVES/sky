@@ -94,7 +94,7 @@ def convo_layer(num_in, num_out, prev):
     h = tf.nn.relu(conv2d(prev, W) + b)
     return h
 
-def build_net():
+def build_net(learning_rate=1e-4):
     print ("Building network")
     tf.reset_default_graph()
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
@@ -105,7 +105,7 @@ def build_net():
     y_ = tf.placeholder(tf.int64, [None])
     cross_entropy = tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))
-    train_step = tf.train.AdamOptimizer(1e-5).minimize(cross_entropy)
+    train_step = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
     correct_prediction = tf.equal(tf.argmax(y,1), y_)
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     saver = tf.train.Saver()
@@ -121,12 +121,12 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_c
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
-            for i in range(1, 2 + 1):
+            for i in range(1, 1000 + 1):
                 batch = random.sample(train_stamps, 50)
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
                 train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 1 == 0:
+                if i % 10 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
                     train_accuracy = accuracy.eval(feed_dict={
                             x:inputs, y_:correct})
@@ -150,8 +150,8 @@ def test_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_co
 #        img.save('data/out_masks/output-' + str(i).zfill(6) + '.png')
              
 if __name__ == '__main__':
-    print(sys.argv)
     out_dir = 'results/' + sys.argv[1] + datetime.now().strftime('%Y%m%d%H%M%S') + '/'
     os.makedirs(out_dir)
-    train_net(*build_net(), *load_validation_batch(), out_dir)
+    learning_rate = float(sys.argv[2])
+    train_net(*build_net(learning_rate), *load_validation_batch(), out_dir)
 #   test_net(*build_net(), *load_validation_batch(), 770)
