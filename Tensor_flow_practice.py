@@ -9,7 +9,9 @@ Created on Mon May 22 10:20:00 2017
 import numpy as np
 from scipy import misc
 from PIL import Image
+from datetime import datetime
 import tensorflow as tf
+import sys
 import os
 import math
 import time
@@ -110,33 +112,34 @@ def build_net():
     init = tf.global_variables_initializer()
     return train_step, accuracy, saver, init, x, y, y_
 
-def train_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_correct):
+def train_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_correct, result_dir):
     start = time.time()
     # Get image and make the mask into a one-hotted mask
     with open('data/train.stamps', 'rb') as f:
         train_stamps = pickle.load(f)
-    with tf.Session() as sess:
-        init.run()
-        print('Step\tTrain\tValid')
-        for i in range(1, 1000 + 1):
-            batch = random.sample(train_stamps, 50)
-            inputs = get_inputs(batch)
-            correct = get_masks(batch)
-            train_step.run(feed_dict={x: inputs, y_: correct})
-            if i % 10 == 0:
-                saver.save(sess, 'results/weights', global_step=i)
-                train_accuracy = accuracy.eval(feed_dict={
-                        x:inputs, y_:correct})
-                valid_accuracy = accuracy.eval(feed_dict={
-                        x:valid_inputs, y_:valid_correct})
-                print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy))
-    stop = time.time()
-    print('Elapsed time: {} seconds'.format(stop - start))
+    with open(result_dir + 'output.txt', 'w') as f:
+        with tf.Session() as sess:
+            init.run()
+            print('Step\tTrain\tValid', file=f, flush=True)
+            for i in range(1, 2 + 1):
+                batch = random.sample(train_stamps, 50)
+                inputs = get_inputs(batch)
+                correct = get_masks(batch)
+                train_step.run(feed_dict={x: inputs, y_: correct})
+                if i % 1 == 0:
+                    saver.save(sess, result_dir + 'weights', global_step=i)
+                    train_accuracy = accuracy.eval(feed_dict={
+                            x:inputs, y_:correct})
+                    valid_accuracy = accuracy.eval(feed_dict={
+                            x:valid_inputs, y_:valid_correct})
+                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)
+        stop = time.time()
+        print('Elapsed time: {} seconds'.format(stop - start), file=f, flush=True)
    
-def test_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_correct, num):
+def test_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_correct, num, result_dir):
      # Train
     with tf.Session() as sess:
-        saver.restore(sess, 'results/weights-' + str(num))
+        saver.restore(sess, result_dir + 'weights-' + str(num))
         valid_accuracy = accuracy.eval(feed_dict={
                 x:valid_inputs, y_:valid_correct})
         print('{:1.5f}'.format(valid_accuracy))
@@ -147,5 +150,8 @@ def test_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_co
 #        img.save('data/out_masks/output-' + str(i).zfill(6) + '.png')
              
 if __name__ == '__main__':
-    train_net(*build_net(), *load_validation_batch())
+    print(sys.argv)
+    out_dir = 'results/' + sys.argv[1] + datetime.now().strftime('%Y%m%d%H%M%S') + '/'
+    os.makedirs(out_dir)
+    train_net(*build_net(), *load_validation_batch(), out_dir)
 #   test_net(*build_net(), *load_validation_batch(), 770)
