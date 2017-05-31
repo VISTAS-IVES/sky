@@ -150,8 +150,8 @@ def test_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_co
 #        img.save('data/out_masks/output-' + str(i).zfill(6) + '.png')
              
 if __name__ == '__main__':
-    out_dir = 'results/' + sys.argv[1] + datetime.now().strftime('%Y%m%d%H%M%S') + '/'
+    learning_rate = float(sys.argv[1])
+    out_dir = 'results/learning_rate_' + sys.argv[1] + '-' + datetime.now().strftime('%Y%m%d%H%M%S') + '/'
     os.makedirs(out_dir)
-    learning_rate = float(sys.argv[2])
     train_net(*build_net(learning_rate), *load_validation_batch(), out_dir)
 #   test_net(*build_net(), *load_validation_batch(), 770)
