@@ -152,7 +152,7 @@ def test_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_co
 if __name__ == '__main__':
     job_number = sys.argv[1]
     learning_rate = float(sys.argv[2])
-    out_dir = 'results/learning_rate_' + str(learning_rate) + '-' + 'job_number_' + job_number + '-' + datetime.now().strftime('%Y%m%d%H%M%S') + '/'
+    out_dir = 'results/job_number_' + job_number + '_' + 'learning_rate_' + str(learning_rate) + '_' +  datetime.now().strftime('%Y%m%d%H%M%S') + '/'
     os.makedirs(out_dir)
     train_net(*build_net(learning_rate), *load_validation_batch(), out_dir)
 #   test_net(*build_net(), *load_validation_batch(), 770)
