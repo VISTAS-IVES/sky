@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node 1
 #SBATCH --cpus-per-task 20
 #SBATCH --mem-per-cpu 2048
-#SBATCH --partition long
+#SBATCH --partition medium
 #SBATCH --output=output.txt
 
 module load Python/intel-python3.5.2
