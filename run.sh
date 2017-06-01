@@ -8,6 +8,7 @@
 #SBATCH --output=output.txt
 
 module load Python/intel-python3.5.2
+echo $options
 srun --unbuffered python Tensor_flow_practice.py $options
 
 
