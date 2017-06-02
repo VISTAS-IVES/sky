@@ -7,7 +7,7 @@ Created on Fri May 26 10:45:02 2017
 """
 
 import unittest
-from preprocess import simplify_name, extract_timestamp, simplify_colors, color_counts, separate_stamps
+from preprocess import simplify_name, extract_timestamp, simplify_colors, color_counts, separate_stamps, remove_sun
 from preprocess import BLACK, BLUE, GREEN, YELLOW, WHITE, GRAY
 import numpy as np
 
@@ -30,6 +30,27 @@ class TestPreprocess(unittest.TestCase):
     def test_extract_timestamp(self):
         f = 'sgptsicldmaskC1.a1.20160414.235930.png.20160414235930.png'
         self.assertEqual(extract_timestamp(f), '20160414235930')
+        
+    def test_remove_sun(self):
+        img = np.array([[BLACK, BLUE, BLACK, BLACK, BLACK, BLACK, BLACK],
+                       [BLACK, WHITE, WHITE, BLACK, BLACK, BLACK, BLACK],
+                       [BLACK, WHITE, BLACK, BLACK, BLACK, BLACK, BLACK],
+                       [BLACK, BLUE, BLACK, WHITE, WHITE, BLACK, BLACK],
+                       [BLACK, BLACK, BLACK, WHITE, WHITE, WHITE, BLACK],
+                       [BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK],
+                       [BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK]])
+        
+        correct = np.array([[BLACK, BLUE,  BLACK, BLACK, BLACK, BLACK, BLACK],
+                            [BLACK, WHITE, WHITE, BLACK, BLACK, BLACK, BLACK],
+                            [BLACK, WHITE, BLACK, BLACK, BLACK, BLACK, BLACK],
+                            [BLACK, BLUE,  BLACK, BLACK, BLACK, BLACK, BLACK],
+                            [BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK],
+                            [BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK],
+                            [BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK]])
+        
+        #correct = (2,2)
+        out = remove_sun(img)
+        self.assertTrue((out == correct).all())
         
     def test_simplify_colors(self):
         img = np.array([[BLACK, BLUE, GREEN],

@@ -30,6 +30,7 @@ import numpy as np
 from PIL import Image
 import random
 import pickle
+import time
 
 BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
@@ -121,6 +122,53 @@ def simplify_colors(img):
     img[(img == GRAY).all(axis = 2)] = WHITE
     return img
 
+
+def depth_first_search(x, y, img, visited, master):
+    if (x < 0 or x >= 480 or y < 0 or y >= 480):
+        return True
+    if ((img[x][y] == BLACK).all()): 
+        return True
+    if (visited[x][y]):
+        return True
+    visited[x][y] = True
+    if (master[x][y]):
+        return False
+    master[x][y] = True
+    if (img[x][y] == GREEN).all() or (img[x][y] == BLUE).all() or (img[x][y] == GRAY).all():
+        return False
+    #group.append((x,y))
+    neighbors = [(x+1,y),(x-1,y),(x,y+1),(x,y-1)]
+
+    for pix in neighbors:
+        x,y = pix
+        if (depth_first_search(x, y, img, visited, master) == False):
+            return False
+    return True
+                  
+def remove_sun(img):
+    start = time.clock()
+    master = np.full((len(img),len(img[0])), False, dtype=bool)
+    for x in range(len(img)):
+        for y in range(len(img[0])):
+            if ((img[x][y] == WHITE).all() or (img[x][y] == YELLOW).all()):
+                visited = np.full((len(img),len(img[0])), False, dtype=bool)
+                if depth_first_search(x,y, img, visited, master):
+                    img[visited] = BLACK   
+                       
+    print("removed the sun in " + str(time.clock()-start))
+    return img
+
+def test_remove():
+    img = misc.imread('Summer Research/sky/data/cldmask/cldmask20160414174600.png')
+    img = remove_sun(img)
+    img = Image.fromarray(img.astype('uint8'))
+    img.show()
+    return img
+
+
+
+
+
 def simplify_masks():
     """Writes similified versions of all images in in_dir to out_dir.
     Returns an array of relative frequencies of BLUE, WHITE, and BLACK."""
@@ -128,6 +176,7 @@ def simplify_masks():
     for file in os.listdir('cldmask/'):
         img = misc.imread('cldmask/' + file)
         img = crop_image(img)
+        img = remove_sun(img)
         simplified = simplify_colors(img)
         counts = counts + color_counts(simplified)
         Image.fromarray(simplified).save('simplemask/simplemask' + extract_timestamp(file) + '.png')
