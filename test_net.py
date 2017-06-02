@@ -8,11 +8,11 @@ Created on Wed May 24 10:51:32 2017
 
 
 import unittest
-from Tensor_flow_practice import BLACK, BLUE, WHITE
-import Tensor_flow_practice
+from net import BLACK, BLUE, WHITE
+import net
 import numpy as np
 
-class Test_Tensor_flow_practice(unittest.TestCase):
+class Test_net(unittest.TestCase):
     
     def setup(self):
         pass
@@ -24,7 +24,7 @@ class Test_Tensor_flow_practice(unittest.TestCase):
         img = np.array([[BLACK, WHITE, BLUE],
                         [BLACK, BLACK, WHITE],
                         [BLUE, WHITE, WHITE]])
-        one_hot = Tensor_flow_practice.mask_to_one_hot(img)
+        one_hot = net.mask_to_one_hot(img)
         correct = np.array([[[0,0,1],[1,0,0],[0,1,0]],
                             [[0,0,1],[0,0,1],[1,0,0]],
                             [[0,1,0],[1,0,0],[1,0,0]]])
@@ -34,7 +34,7 @@ class Test_Tensor_flow_practice(unittest.TestCase):
         img = np.array([[BLACK, WHITE, BLUE],
                         [BLACK, BLACK, WHITE],
                         [BLUE, WHITE, WHITE]])
-        indexes = Tensor_flow_practice.mask_to_index(img)
+        indexes = net.mask_to_index(img)
         correct = np.array([[2,0,1],
                             [2,2,0],
                             [1,0,0]])
@@ -48,7 +48,7 @@ class Test_Tensor_flow_practice(unittest.TestCase):
         max_indexes = np.array([[1,2,0],
                                 [0,0,1],
                                 [1,2,2]])
-        outs = Tensor_flow_practice.one_hot_to_mask(max_indexes, output)
+        outs = net.one_hot_to_mask(max_indexes, output)
         correct = np.array([[BLUE, BLACK, WHITE],
                             [WHITE, WHITE, BLUE],
                             [BLUE, BLACK, BLACK]])

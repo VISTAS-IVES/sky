@@ -2,5 +2,6 @@ data/
 data
 results/
 results
+output.txt
 .DS_Store
 __pycache__/
