@@ -146,15 +146,18 @@ def remove_white_sun(img):
     that is handled by simplify_colors.)"""
     start = time.clock()
     ever_visited = np.full(img.shape[:2], False, dtype=bool)
-    for r in range(img.shape[0]):
-        for c in range(img.shape[1]):
+    visited = np.full(img.shape[:2], False, dtype=bool)
+    for r in range(0, img.shape[0], 10):
+        for c in range(0, img.shape[1], 10):
             if ((img[r][c] == WHITE).all()):
-                visited = np.full(img.shape[:2], False, dtype=bool)
                 stack = []
                 stack.append((r, c))
+                visited.fill(False)
                 if depth_first_search(r, c, img, visited, ever_visited, stack):
-                    img[visited] = BLACK                       
-    print("removed the sun in " + str(time.clock()-start))
+                    img[visited] = BLACK
+                    print('Removed the sun in ' + str(time.clock()-start) + ' seconds')
+                    return img
+    print('No sun found!')
     return img
 
 def test_remove():
@@ -224,4 +227,3 @@ if __name__ == '__main__':
 #          str(len(train)) + ' training cases.')
     os.chdir(before)
 #    print('Done')
-    
