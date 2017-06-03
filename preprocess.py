@@ -122,52 +122,48 @@ def simplify_colors(img):
     img[(img == GRAY).all(axis = 2)] = WHITE
     return img
 
-
-def depth_first_search(x, y, img, visited, master):
-    if (x < 0 or x >= 480 or y < 0 or y >= 480):
-        return True
-    if ((img[x][y] == BLACK).all()): 
-        return True
-    if (visited[x][y]):
-        return True
-    visited[x][y] = True
-    if (master[x][y]):
-        return False
-    master[x][y] = True
-    if (img[x][y] == GREEN).all() or (img[x][y] == BLUE).all() or (img[x][y] == GRAY).all():
-        return False
-    #group.append((x,y))
-    neighbors = [(x+1,y),(x-1,y),(x,y+1),(x,y-1)]
-
-    for pix in neighbors:
-        x,y = pix
-        if (depth_first_search(x, y, img, visited, master) == False):
+def depth_first_search(r, c, img, visited, ever_visited, stack):
+    """Returns True if there is a connected region including img[r][c] that is all
+    WHITE and surrounded by BLACK. Modifies visited to include all of the white pixels.
+    Modified ever_visited to include all pixels explored."""
+    while stack:
+        r, c = stack.pop()
+        if ((img[r][c] == BLACK).all()): 
+            continue
+        if (visited[r][c]):
+            continue
+        visited[r][c] = True
+        if (ever_visited[r][c]):
             return False
+        ever_visited[r][c] = True
+        if (img[r][c] == GREEN).all() or (img[r][c] == BLUE).all() or (img[r][c] == GRAY).all():
+            return False
+        stack.extend(((r+1, c), (r-1, c), (r, c+1), (r, c-1)))
     return True
                   
-def remove_sun(img):
+def remove_white_sun(img):
+    """Removes the sun disk from img if it is white. (A yellow sun is easier to remove;
+    that is handled by simplify_colors.)"""
     start = time.clock()
-    master = np.full((len(img),len(img[0])), False, dtype=bool)
-    for x in range(len(img)):
-        for y in range(len(img[0])):
-            if ((img[x][y] == WHITE).all() or (img[x][y] == YELLOW).all()):
-                visited = np.full((len(img),len(img[0])), False, dtype=bool)
-                if depth_first_search(x,y, img, visited, master):
-                    img[visited] = BLACK   
-                       
+    ever_visited = np.full(img.shape[:2], False, dtype=bool)
+    for r in range(img.shape[0]):
+        for c in range(img.shape[1]):
+            if ((img[r][c] == WHITE).all()):
+                visited = np.full(img.shape[:2], False, dtype=bool)
+                stack = []
+                stack.append((r, c))
+                if depth_first_search(r, c, img, visited, ever_visited, stack):
+                    img[visited] = BLACK                       
     print("removed the sun in " + str(time.clock()-start))
     return img
 
 def test_remove():
-    img = misc.imread('Summer Research/sky/data/cldmask/cldmask20160414174600.png')
-    img = remove_sun(img)
+    img = misc.imread('data/cldmask/cldmask20160414174600.png')
+    img = remove_white_sun(img)
+    print(type(img))
     img = Image.fromarray(img.astype('uint8'))
     img.show()
     return img
-
-
-
-
 
 def simplify_masks():
     """Writes similified versions of all images in in_dir to out_dir.
@@ -176,8 +172,14 @@ def simplify_masks():
     for file in os.listdir('cldmask/'):
         img = misc.imread('cldmask/' + file)
         img = crop_image(img)
-        img = remove_sun(img)
+        print('About to remove sun from ' + file)
+        if (img == YELLOW).all(axis = 2).any():
+            print('Sun is yellow')
+        else:
+            print('Removing white sun')
+            img = remove_white_sun(img)
         simplified = simplify_colors(img)
+        simplified = img
         counts = counts + color_counts(simplified)
         Image.fromarray(simplified).save('simplemask/simplemask' + extract_timestamp(file) + '.png')
     return counts / counts.sum()
@@ -203,23 +205,23 @@ def separate_data():
 if __name__ == '__main__':
     before = os.getcwd()
     os.chdir('data')
-    print('Creating directories')
-    create_dirs()
-    print('Unpacking tars')
-    unpack_all_tars()
-    print('Simplifying names')
-    simplify_all_names()
-    print('Removing images without masks')
-    remove_images_without_matching_masks()
-    print('Simplifying images')
-    print(str(simplify_images()) + ' images processed')
-    print('Simplifying masks')    
+#    print('Creating directories')
+#    create_dirs()
+#    print('Unpacking tars')
+#    unpack_all_tars()
+#    print('Simplifying names')
+#    simplify_all_names()
+#    print('Removing images without masks')
+#    remove_images_without_matching_masks()
+#    print('Simplifying images')
+#    print(str(simplify_images()) + ' images processed')
+#    print('Simplifying masks')    
     print('[Blue, White, Black] = ' + str(simplify_masks()))
-    print('Separating data') 
-    test, valid, train = separate_data()
-    print(str(len(test)) + ' test cases; ' + 
-          str(len(valid)) + ' validation cases; ' + 
-          str(len(train)) + ' training cases.')
+#    print('Separating data') 
+#    test, valid, train = separate_data()
+#    print(str(len(test)) + ' test cases; ' + 
+#          str(len(valid)) + ' validation cases; ' + 
+#          str(len(train)) + ' training cases.')
     os.chdir(before)
-    print('Done')
+#    print('Done')
     
