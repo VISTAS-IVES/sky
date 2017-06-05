@@ -35,7 +35,7 @@ def find_radii(inputs):
     for r in range(480):
         for c in range(480):
             result[r, c] = math.sqrt((239.5 - r)**2 + (239.5 - c)**2)
-    return np.concatenate(inputs, result, axis = 2)
+    return np.concatenate((inputs, result), axis = 2)
 
 def mask_to_one_hot(img):
     """Modifies (and returns) img to have a one-hot vector for each
