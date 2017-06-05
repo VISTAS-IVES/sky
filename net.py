@@ -25,11 +25,10 @@ WHITE = np.array([255, 255, 255])
 def find_radii(inputs):
     """inputs is a 480x480x3 array, we add the distance from the center
     making it a 480x480x4 array""" 
-    np.set_printoptions(threshold=np.nan)
-    r = np.empty((480,480))
-    for n in range(480):
-        for i in range(480):
-            r[n,i] = math.sqrt((239.5-i)**2 + (239.5-n)**2)
+    result = np.empty((480,480))
+    for r in range(480):
+        for c in range(480):
+            result[r, c] = math.sqrt((239.5-r)**2 + (239.5-c)**2)
             
     return np.concatenate(inputs, r, axis = 2)
 
