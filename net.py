@@ -22,16 +22,20 @@ BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])  
 
+# Distances from center of an image
+RADII = np.empty((480,480))
+for r in range(480):
+    for c in range(480):
+        RADII[r, c] = math.sqrt((239.5 - r) ** 2 + (239.5 - c) ** 2)
+
 def find_radii(inputs):
     """inputs is a 480x480x3 array, we add the distance from the center
     making it a 480x480x4 array""" 
-    np.set_printoptions(threshold=np.nan)
-    r = np.empty((480,480))
-    for n in range(480):
-        for i in range(480):
-            r[n,i] = math.sqrt((239.5-i)**2 + (239.5-n)**2)
-            
-    return np.concatenate(inputs, r, axis = 2)
+    result = np.empty((480,480))
+    for r in range(480):
+        for c in range(480):
+            result[r, c] = math.sqrt((239.5 - r)**2 + (239.5 - c)**2)
+    return np.concatenate(inputs, result, axis = 2)
 
 def mask_to_one_hot(img):
     """Modifies (and returns) img to have a one-hot vector for each
@@ -52,8 +56,9 @@ def mask_to_index(img):
 
 def get_inputs(stamps):
     inputs = np.empty((len(stamps), 480, 480, 4))
-    for i, s in enumerate(stamps):  
-        inputs[i] = find_radii(np.array(misc.imread('data/simpleimage/simpleimage' + str(s) + '.jpg')))
+    for i, s in enumerate(stamps):
+        img = np.array(misc.imread('data/simpleimage/simpleimage' + str(s) + '.jpg'))
+        inputs[i] = np.concatenate(img, RADII, axis=2)
     return inputs
 
 def get_masks(stamps):
