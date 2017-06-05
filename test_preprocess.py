@@ -7,7 +7,7 @@ Created on Fri May 26 10:45:02 2017
 """
 
 import unittest
-from preprocess import simplify_name, extract_timestamp, simplify_colors, color_counts, separate_stamps, remove_sun
+from preprocess import simplify_name, extract_timestamp, simplify_colors, color_counts, separate_stamps, remove_white_sun
 from preprocess import BLACK, BLUE, GREEN, YELLOW, WHITE, GRAY
 import numpy as np
 
@@ -31,7 +31,7 @@ class TestPreprocess(unittest.TestCase):
         f = 'sgptsicldmaskC1.a1.20160414.235930.png.20160414235930.png'
         self.assertEqual(extract_timestamp(f), '20160414235930')
         
-    def test_remove_sun(self):
+    def test_remove_white_sun(self):
         img = np.array([[BLACK, BLUE, BLACK, BLACK, BLACK, BLACK, BLACK],
                        [BLACK, WHITE, WHITE, BLACK, BLACK, BLACK, BLACK],
                        [BLACK, WHITE, BLACK, BLACK, BLACK, BLACK, BLACK],
@@ -49,7 +49,7 @@ class TestPreprocess(unittest.TestCase):
                             [BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK]])
         
         #correct = (2,2)
-        out = remove_sun(img)
+        out = remove_white_sun(img)
         self.assertTrue((out == correct).all())
         
     def test_simplify_colors(self):

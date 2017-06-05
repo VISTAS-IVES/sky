@@ -8,7 +8,6 @@ Created on Mon May 22 10:20:00 2017
 """
 import numpy as np
 from scipy import misc
-from PIL import Image
 from datetime import datetime
 import tensorflow as tf
 import sys
@@ -50,23 +49,6 @@ def mask_to_index(img):
     result[(img == BLUE).all(axis = 2)]  = 1
     result[(img == BLACK).all(axis = 2)] = 2
     return result
-
-def one_hot_to_mask(max_indexs, output):
-    """Modifies (and returns) img to have sensible colors in place of
-    one-hot vectors."""
-    output[(max_indexs == 0)] = WHITE
-    output[(max_indexs == 1)] = BLUE
-    output[(max_indexs == 2)] = BLACK
-    return output
-
-def out_to_image(output, n):
-    """Modifies (and returns) the output of the network for the nth image as a
-    human-readable RGB image."""
-    output = output.reshape([-1,480,480,3])[n]
-    outs = output
-    # We use argmax instead of softmax so that we really will get one-hots
-    max_indexes = np.argmax(outs, axis = 2)
-    return one_hot_to_mask(max_indexes, outs)
 
 def get_inputs(stamps):
     inputs = np.empty((len(stamps), 480, 480, 4))
@@ -146,19 +128,6 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_c
                     print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)
         stop = time.time()
         print('Elapsed time: {} seconds'.format(stop - start), file=f, flush=True)
-   
-def test_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_correct, num, result_dir):
-     # Train
-    with tf.Session() as sess:
-        saver.restore(sess, result_dir + 'weights-' + str(num))
-        valid_accuracy = accuracy.eval(feed_dict={
-                x:valid_inputs, y_:valid_correct})
-        print('{:1.5f}'.format(valid_accuracy))
-        inputs = get_inputs([20160414162830])
-        img = out_to_image(y.eval(feed_dict={x: inputs}), 0)
-        img = Image.fromarray(img.astype('uint8'))
-        img.show()
-#        img.save('data/out_masks/output-' + str(i).zfill(6) + '.png')
              
 if __name__ == '__main__':
     job_number = sys.argv[1]
@@ -166,4 +135,3 @@ if __name__ == '__main__':
     out_dir = 'results/job_number_' + job_number + '_' + 'learning_rate_' + str(learning_rate) + '_' +  datetime.now().strftime('%Y%m%d%H%M%S') + '/'
     os.makedirs(out_dir)
     train_net(*build_net(learning_rate), *load_validation_batch(), out_dir)
-#   test_net(*build_net(), *load_validation_batch(), 770)
