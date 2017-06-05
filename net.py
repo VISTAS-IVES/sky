@@ -23,6 +23,17 @@ BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])  
 
+def find_radii(inputs):
+    """inputs is a 480x480x3 array, we add the distance from the center
+    making it a 480x480x4 array""" 
+    np.set_printoptions(threshold=np.nan)
+    r = np.empty((480,480))
+    for n in range(480):
+        for i in range(480):
+            r[n,i] = math.sqrt((239.5-i)**2 + (239.5-n)**2)
+            
+    return np.concatenate(inputs, r, axis = 2)
+
 def mask_to_one_hot(img):
     """Modifies (and returns) img to have a one-hot vector for each
     pixel."""
@@ -58,9 +69,9 @@ def out_to_image(output, n):
     return one_hot_to_mask(max_indexes, outs)
 
 def get_inputs(stamps):
-    inputs = np.empty((len(stamps), 480, 480, 3))
+    inputs = np.empty((len(stamps), 480, 480, 4))
     for i, s in enumerate(stamps):  
-        inputs[i] = np.array(misc.imread('data/simpleimage/simpleimage' + str(s) + '.jpg'))
+        inputs[i] = find_radii(np.array(misc.imread('data/simpleimage/simpleimage' + str(s) + '.jpg')))
     return inputs
 
 def get_masks(stamps):
@@ -97,8 +108,8 @@ def convo_layer(num_in, num_out, prev):
 def build_net(learning_rate=1e-4):
     print ("Building network")
     tf.reset_default_graph()
-    x = tf.placeholder(tf.float32, [None, 480, 480, 3])
-    h1 = convo_layer(3,32,x)
+    x = tf.placeholder(tf.float32, [None, 480, 480, 4])
+    h1 = convo_layer(4,32,x)
     h2 = convo_layer(32,32,h1)
     h3 = convo_layer(32,3,h2)
     y = tf.reshape(h3, [-1, 3])

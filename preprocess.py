@@ -31,6 +31,7 @@ from PIL import Image
 import random
 import pickle
 import time
+import gc
 
 BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
@@ -146,6 +147,7 @@ def depth_first_search(x, y, img, visited, master):
     return True
                   
 def remove_sun(img):
+    gc.collect()
     start = time.clock()
     master = np.full((len(img),len(img[0])), False, dtype=bool)
     for x in range(len(img)):
@@ -153,10 +155,11 @@ def remove_sun(img):
             if ((img[x][y] == WHITE).all() or (img[x][y] == YELLOW).all()):
                 visited = np.full((len(img),len(img[0])), False, dtype=bool)
                 if depth_first_search(x,y, img, visited, master):
-                    img[visited] = BLACK   
+                    img[visited] = BLACK
+                    print("removed the sun in " + str(time.clock()-start))
+                    return img
                        
-    print("removed the sun in " + str(time.clock()-start))
-    return img
+    
 
 def test_remove():
     img = misc.imread('Summer Research/sky/data/cldmask/cldmask20160414174600.png')
@@ -173,10 +176,13 @@ def simplify_masks():
     """Writes similified versions of all images in in_dir to out_dir.
     Returns an array of relative frequencies of BLUE, WHITE, and BLACK."""
     counts = np.zeros(3, dtype=np.int)
+    tester = 0
     for file in os.listdir('cldmask/'):
+        tester = tester + 1
         img = misc.imread('cldmask/' + file)
         img = crop_image(img)
-        img = remove_sun(img)
+        if (tester > 10):
+            img = remove_sun(img)
         simplified = simplify_colors(img)
         counts = counts + color_counts(simplified)
         Image.fromarray(simplified).save('simplemask/simplemask' + extract_timestamp(file) + '.png')
@@ -201,6 +207,8 @@ def separate_data():
     return test, valid, train
 
 if __name__ == '__main__':
+    #resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+
     before = os.getcwd()
     os.chdir('data')
     print('Creating directories')
