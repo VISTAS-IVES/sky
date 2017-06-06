@@ -58,6 +58,7 @@ def get_inputs(stamps):
     inputs = np.empty((len(stamps), 480, 480, 4))
     for i, s in enumerate(stamps):
         img = np.array(misc.imread('data/simpleimage/simpleimage' + str(s) + '.jpg'))
+        img = scale(img)
         inputs[i] = np.concatenate((img, RADII), axis=2)
     return inputs
 
