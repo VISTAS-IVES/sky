@@ -33,9 +33,7 @@ def scale(img):
     for r in range(480):
         for c in range(480):
             img[r,c] = img[r,c] / 255.0
-            print (img[r,c])
     return img           
-    
             
 def mask_to_one_hot(img):
     """Modifies (and returns) img to have a one-hot vector for each
