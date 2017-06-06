@@ -23,16 +23,20 @@ BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])  
 # Distances from center of an image
 RADII = np.empty((480,480, 1))
+"""inputs is a 480x480x3 array, we add the distance from the center
+making it a 480x480x4 array""" 
+for r in range(480):
+    for c in range(480):
+        RADII[r, c, 0] = (math.sqrt((239.5 - r) ** 2 + (239.5 - c) ** 2)) / (math.sqrt(2) * 239.5)
 
-def find_radii(inputs):
-    """inputs is a 480x480x3 array, we add the distance from the center
-    making it a 480x480x4 array""" 
+def scale(img):
     for r in range(480):
         for c in range(480):
-            RADII[r, c, 0] = math.sqrt((239.5 - r) ** 2 + (239.5 - c) ** 2)
-    return np.concatenate(inputs, r, axis = 2)
-
-
+            img[r,c] = img[r,c] / 255.0
+            print (img[r,c])
+    return img           
+    
+            
 def mask_to_one_hot(img):
     """Modifies (and returns) img to have a one-hot vector for each
     pixel."""

@@ -19,6 +19,16 @@ class Test_net(unittest.TestCase):
     
     def tearDown(self):
         pass
+
+    def test_scale(self):
+        img = np.array([[BLACK, WHITE, BLUE],
+                        [BLACK, BLACK, WHITE],
+                        [BLUE, WHITE, WHITE]])
+        correct = np.array([[[0,0,0],[1,1,1],[0,0,1]],
+                            [[0,0,0],[0,0,0],[1,1,1]],
+                            [[0,0,1],[1,1,1],[1,1,1]]])
+        img = net.scale(img)
+        self.assertTrue((img == correct).all())
     
     def test_mask_to_one_hot(self):
         img = np.array([[BLACK, WHITE, BLUE],
