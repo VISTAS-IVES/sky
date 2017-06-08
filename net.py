@@ -36,11 +36,7 @@ def scale(img):
         for c in range(480):
             img[r,c] = img[r,c] / 255.0
     return img           
-<<<<<<< HEAD
-                
-=======
-            
->>>>>>> 7dff28ad3827de10bdec4f4a6c15dbb0150cee45
+
 def mask_to_one_hot(img):
     """Modifies (and returns) img to have a one-hot vector for each
     pixel."""
