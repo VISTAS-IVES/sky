@@ -36,7 +36,7 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, num, result_dir):
         img = out_to_image(y.eval(feed_dict={x: inputs}), 0)
         img = Image.fromarray(img.astype('uint8'))
         img.show()
-#        img.save('data/out_masks/output-' + str(i).zfill(6) + '.png')
+#        img.save('results/out2.png')
 
 if __name__ == '__main__':
-   load_net(*build_net(), 2400, 'results/test3/')
+   load_net(*build_net(), 5000, 'results/test3/')
