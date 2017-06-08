@@ -124,15 +124,16 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_c
     
     start = time.time()
     # Get image and make the mask into a one-hotted mask
-    with open('data/train.stamps', 'rb') as f:
-        train_stamps = pickle.load(f)
+#    with open('data/train.stamps', 'rb') as f:
+#        train_stamps = pickle.load(f)
     with open(result_dir + 'output.txt', 'w') as f:
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
             for i in range(1, 5000 + 1):
                 print("step {}".format(i))
-                batch = random.sample(train_stamps, BATCH_SIZE)
+                batch = (20160414162830)
+#                batch = random.sample(train_stamps, BATCH_SIZE)
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
                 train_step.run(feed_dict={x: inputs, y_: correct})
@@ -140,9 +141,10 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_c
                     saver.save(sess, result_dir + 'weights', global_step=i)
                     train_accuracy = accuracy.eval(feed_dict={
                             x:inputs, y_:correct})
-                    valid_accuracy = accuracy.eval(feed_dict={
-                            x:valid_inputs, y_:valid_correct})
-                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)
+#                    valid_accuracy = accuracy.eval(feed_dict={
+#                            x:valid_inputs, y_:valid_correct})
+                    print('{}\t{:1.5f}'.format(i, train_accuracy), file=f, flush=True)
+#                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)
         stop = time.time()
         print('Elapsed time: {} seconds'.format(stop - start), file=f, flush=True)
              
