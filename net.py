@@ -23,6 +23,8 @@ BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])  
 # Distances from center of an image
 RADII = np.empty((480,480, 1))
+BATCH_SIZE = 50
+
 """inputs is a 480x480x3 array, we add the distance from the center
 making it a 480x480x4 array""" 
 for r in range(480):
@@ -33,10 +35,8 @@ def scale(img):
     for r in range(480):
         for c in range(480):
             img[r,c] = img[r,c] / 255.0
-            print (img[r,c])
     return img           
-    
-            
+                
 def mask_to_one_hot(img):
     """Modifies (and returns) img to have a one-hot vector for each
     pixel."""
@@ -55,11 +55,11 @@ def mask_to_index(img):
     return result
 
 def get_inputs(stamps):
-    inputs = np.empty((len(stamps), 480, 480, 4))
+    inputs = np.empty((len(stamps), 480, 480, 3))
     for i, s in enumerate(stamps):
         img = np.array(misc.imread('data/simpleimage/simpleimage' + str(s) + '.jpg'))
         img = scale(img)
-        inputs[i] = np.concatenate((img, RADII), axis=2)
+        #inputs[i] = np.concatenate((img, RADII), axis=2)
     return inputs
 
 def get_masks(stamps):
@@ -87,6 +87,13 @@ def load_validation_batch():
     valid_correct = get_masks(valid_stamps)
     return valid_inputs, valid_correct
 
+def first_convo_layer(num_in, num_out, prev, radii):
+    W = weight_variable([3, 3, num_in, num_out], 3 * 3 * num_in)
+    R = weight_variable([1, 1, 1, num_out], 1)
+    b = bias_variable([num_out])
+    h = tf.nn.relu(conv2d(prev, W) + b + conv2d(radii, R))
+    return h
+
 def convo_layer(num_in, num_out, prev):
     W = weight_variable([3, 3, num_in, num_out], 3 * 3 * num_in)
     b = bias_variable([num_out])
@@ -96,8 +103,9 @@ def convo_layer(num_in, num_out, prev):
 def build_net(learning_rate=1e-4):
     print ("Building network")
     tf.reset_default_graph()
-    x = tf.placeholder(tf.float32, [None, 480, 480, 4])
-    h1 = convo_layer(4,32,x)
+    radii = tf.constant(np.reshape(RADII, (1, 480, 480, 1)),  dtype = tf.float32)
+    x = tf.placeholder(tf.float32, [None, 480, 480, 3])
+    h1 = first_convo_layer(3,32,x, radii)
     h2 = convo_layer(32,32,h1)
     h3 = convo_layer(32,3,h2)
     y = tf.reshape(h3, [-1, 3])
@@ -112,7 +120,14 @@ def build_net(learning_rate=1e-4):
     return train_step, accuracy, saver, init, x, y, y_
 
 def train_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_correct, result_dir):
+    print("training network")
+    
     start = time.time()
+    batch_time = 0
+    inputs_time = 0
+    masks_time = 0
+    train_time = 0
+    accuracy_time = 0
     # Get image and make the mask into a one-hotted mask
     with open('data/train.stamps', 'rb') as f:
         train_stamps = pickle.load(f)
@@ -120,20 +135,38 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_c
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
-            for i in range(1, 5000 + 1):
-                batch = random.sample(train_stamps, 50)
+            for i in range(1, 2 + 1):
+                print("step {}".format(i))
+                
+                before = time.time()
+                batch = random.sample(train_stamps, BATCH_SIZE)
+                batch_time += (time.time() - before)
+                
+                before = time.time()
                 inputs = get_inputs(batch)
+                inputs_time += (time.time() - before)
+                
+                before = time.time()
                 correct = get_masks(batch)
+                masks_time += (time.time() - before)
+                
+                before = time.time()
                 train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 100 == 0:
+                train_time += (time.time() - before)
+                
+                if i % 2 == 0:
+                    before = time.time()
                     saver.save(sess, result_dir + 'weights', global_step=i)
                     train_accuracy = accuracy.eval(feed_dict={
                             x:inputs, y_:correct})
                     valid_accuracy = accuracy.eval(feed_dict={
                             x:valid_inputs, y_:valid_correct})
                     print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)
+                    accuracy_time += (time.time() - before)
         stop = time.time()
         print('Elapsed time: {} seconds'.format(stop - start), file=f, flush=True)
+        print ('batch_time:{}\ninputs_time:{}\nmasks_time:{}\ntrain_time:{}\naccuracy_time:{}'
+               .format(batch_time,inputs_time,masks_time,train_time,accuracy_time))
              
 if __name__ == '__main__':
     job_number = sys.argv[1]
