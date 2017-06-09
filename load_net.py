@@ -39,4 +39,4 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, num, result_dir):
 #        img.save('results/out2.png')
 
 if __name__ == '__main__':
-   load_net(*build_net(), 5000, 'results/test3/')
+   load_net(*build_net(), 100000, 'results/test3/')
