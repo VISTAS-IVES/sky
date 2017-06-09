@@ -105,8 +105,8 @@ def build_net(learning_rate=1e-4):
     tf.reset_default_graph()
     radii = tf.constant(np.reshape(RADII, (1, 480, 480, 1)),  dtype = tf.float32)
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
-    h1 = first_convo_layer(3,32,x, radii)
-    h2 = convo_layer(32,32,h1)
+    h1 = first_convo_layer(3,64,x, radii)
+    h2 = convo_layer(64,32,h1)
     h3 = convo_layer(32,3,h2)
     y = tf.reshape(h3, [-1, 3])
     y_ = tf.placeholder(tf.int64, [None])
@@ -133,7 +133,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, valid_inputs, valid_c
             batch = (20160414162830,)
             inputs = get_inputs(batch)
             correct = get_masks(batch)
-            for i in range(1, 100000 + 1):
+            for i in range(1, 10000 + 1):
 #                batch = random.sample(train_stamps, BATCH_SIZE)
                 train_step.run(feed_dict={x: inputs, y_: correct})
                 if i % 1000 == 0:
