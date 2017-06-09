@@ -112,16 +112,24 @@ def convo_layer(num_in, num_out, prev):
     return h
 
 
-def build_net(learning_rate=1e-4):
+def build_net(learning_rate, layer_sizes):
     print("Building network")
     tf.reset_default_graph()
     radii = tf.constant(np.reshape(RADII, (1, 480, 480, 1)), dtype=tf.float32)
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
-    h1 = first_convo_layer(3, 128, x, radii)
-    h2 = convo_layer(128, 64, h1)
-    h3 = convo_layer(64, 32, h2)
-    h4 = convo_layer(32, 3, h3)
-    y = tf.reshape(h4, [-1, 3])
+    num_layers = len(layer_sizes)+1
+    h = [None] * (num_layers)
+    """uncomment t to test it creates the correct vaues in the convo_layers"""
+    #t = [None] * (num_layers)        
+    #t[0] = (3 , layer_sizes[0], -1)
+    h[0] = first_convo_layer(3, layer_sizes[0], x, radii)
+    for i in range(1, num_layers-1):
+        #t[i] = (layer_sizes[i-1] , layer_sizes[i], i-1)
+        h[i] = convo_layer(layer_sizes[i-1], layer_sizes[i], h[i-1])
+    #t[num_layers-1] = (layer_sizes[num_layers-2], 3, num_layers-2)
+    h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, h[num_layers-2])
+    print (t)
+    y = tf.reshape(h[num_layers-1], [-1, 3])
     y_ = tf.placeholder(tf.int64, [None])
     cross_entropy = tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))
@@ -165,6 +173,9 @@ def train_net(train_step, accuracy, saver, init, x, y, y_,
 if __name__ == '__main__':
     job_number = sys.argv[1]
     learning_rate = float(sys.argv[2])
-    out_dir = 'results/job_number_' + job_number + '_' + 'learning_rate_' + str(learning_rate) + '_' +  datetime.now().strftime('%Y%m%d%H%M%S') + '/'
+    layer_sizes = sys.argv[3::]
+    layer_sizes_print = '_'.join(layer_sizes)
+    out_dir = 'results/job_number_' + job_number + '_' + 'learning_rate_' + str(learning_rate) + '_' + 'layer_sizes_' + layer_sizes_print + '_' + datetime.now().strftime('%Y%m%d%H%M%S') + '/'
     os.makedirs(out_dir)
-    train_net(*build_net(learning_rate), *load_validation_batch(), out_dir)
+    layer_sizes = list(map(int, layer_sizes))
+    train_net(*build_net(learning_rate, layer_sizes), *load_validation_batch(), out_dir)
