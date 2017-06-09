@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 Preprocess Total Sky Imager data from arm.gov. To use this:
-    
+
 1) Get the skyimage and cldmask data as described in Jessica's email.
 2) Put the tars in a new directory called 'data' (which should live in
 the same directory as this file -- git will ignore it).
 3) Run this file.
-    
+
 This will create subfolders skyimage, cldmask, simpleimage, and simplemask.
 Our program runs on the last two. It also creates three files test.stamps,
 valid.stamps, and train.stamps; these are pickled lists of timestamp
@@ -31,7 +31,6 @@ from PIL import Image
 import random
 import pickle
 import time
-import gc
 
 BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
@@ -40,11 +39,13 @@ GRAY = np.array([192, 192, 192])
 YELLOW = np.array([255, 255, 0])
 WHITE = np.array([255, 255, 255])
 
+
 def create_dirs():
     os.mkdir('skyimage')
     os.mkdir('cldmask')
     os.mkdir('simpleimage')
     os.mkdir('simplemask')
+
 
 def unpack_tar(file, dir):
     """Given a tarfile file, moves it to dir, unpacks it, and deletes it."""
@@ -62,6 +63,7 @@ def unpack_tar(file, dir):
         except OSError as err:
             continue
 
+
 def unpack_all_tars():
     for f in os.listdir('./'):
         if f.endswith('.tar'):
@@ -70,30 +72,36 @@ def unpack_all_tars():
             elif 'cldmask' in f:
                 unpack_tar(f, 'cldmask/')
 
+
 def simplify_name(filename):
     """Simplifies the filenames we get from arm.gov."""
     return filename[6:filename.index('C1')] + filename[-18:]
+
 
 def simplify_all_names():
     for dir in ('skyimage/', 'cldmask/'):
         for f in os.listdir(dir):
             os.rename(dir + f, dir + simplify_name(f))
 
+
 def extract_timestamp(filename):
     """Assume filename ends in something like 20160415235930.jpg or
     20160415235930.png."""
     return filename[-18:-4]
-    
+
+
 def remove_images_without_matching_masks():
     """Deletes image files that do not have matching mask files."""
     for f in os.listdir('skyimage/'):
         g = 'cldmask/cldmask' + extract_timestamp(f) + '.png'
         if not os.path.isfile(g):
             os.remove('skyimage/' + f)
-            
+
+
 def crop_image(img):
     """Crops img down to 480 x 480."""
     return np.delete(img, np.concatenate((np.arange(80), np.arange(80)+560)), axis=0)
+
 
 def simplify_images():
     """Crops the images in in_dir down to 480x480 and writes those to out_dir
@@ -107,21 +115,24 @@ def simplify_images():
             Image.fromarray(cropped).save('simpleimage/simpleimage' + extract_timestamp(file) + '.jpg')
     return counts
 
+
 def color_counts(img):
     """Returns an array of the number of BLUE, WHITE, and BLACK pixels
     in img."""
-    blue = (img == BLUE).all(axis = 2).sum()
-    white = (img == WHITE).all(axis = 2).sum()
-    black = (img == BLACK).all(axis = 2).sum()
+    blue = (img == BLUE).all(axis=2).sum()
+    white = (img == WHITE).all(axis=2).sum()
+    black = (img == BLACK).all(axis=2).sum()
     return np.array([blue, white, black])
+
 
 def simplify_colors(img):
     """Returns an image with GREEN and YELLOW pixels made black, GRAY pixels
     WHITE. Destructively modifies img."""
-    img[(img == GREEN).all(axis = 2)] = BLACK
-    img[(img == YELLOW).all(axis = 2)] = BLACK
-    img[(img == GRAY).all(axis = 2)] = WHITE
+    img[(img == GREEN).all(axis=2)] = BLACK
+    img[(img == YELLOW).all(axis=2)] = BLACK
+    img[(img == GRAY).all(axis=2)] = WHITE
     return img
+
 
 def depth_first_search(r, c, img, visited, ever_visited, stack):
     """Returns True if there is a connected region including img[r][c] that is all
@@ -129,7 +140,7 @@ def depth_first_search(r, c, img, visited, ever_visited, stack):
     Modified ever_visited to include all pixels explored."""
     while stack:
         r, c = stack.pop()
-        if ((img[r][c] == BLACK).all()): 
+        if ((img[r][c] == BLACK).all()):
             continue
         if (visited[r][c]):
             continue
@@ -141,10 +152,11 @@ def depth_first_search(r, c, img, visited, ever_visited, stack):
             return False
         stack.extend(((r+1, c), (r-1, c), (r, c+1), (r, c-1)))
     return True
-                  
+
+
 def remove_white_sun(img):
-    """Removes the sun disk from img if it is white. (A yellow sun is easier to remove;
-    that is handled by simplify_colors.)"""
+    """Removes the sun disk from img if it is white. (A yellow sun is easier
+    to remove; that is handled by simplify_colors.)"""
     start = time.clock()
     ever_visited = np.full(img.shape[:2], False, dtype=bool)
     visited = np.full(img.shape[:2], False, dtype=bool)
@@ -161,6 +173,7 @@ def remove_white_sun(img):
     print('No sun found!')
     return img
 
+
 def test_remove():
     img = misc.imread('data/cldmask/cldmask20160414174600.png')
     img = remove_white_sun(img)
@@ -168,6 +181,7 @@ def test_remove():
     img = Image.fromarray(img.astype('uint8'))
     img.show()
     return img
+
 
 def simplify_masks():
     """Writes similified versions of all images in in_dir to out_dir.
@@ -190,12 +204,14 @@ def simplify_masks():
         Image.fromarray(simplified).save('simplemask/simplemask' + extract_timestamp(file) + '.png')
     return counts / counts.sum()
 
+
 def separate_stamps(stamps):
     random.shuffle(stamps)
     test = stamps[0:int(len(stamps)*0.2)]
     valid = stamps[int(len(stamps)*0.2):int(len(stamps)*0.36)]
     train = stamps[int(len(stamps)*0.36):]
     return test, valid, train
+
 
 def separate_data():
     stamps = [int(extract_timestamp(f)) for f in os.listdir('simpleimage/')]
@@ -207,6 +223,7 @@ def separate_data():
     with open('train.stamps', 'wb') as f:
         pickle.dump(train, f)
     return test, valid, train
+
 
 if __name__ == '__main__':
     before = os.getcwd()
@@ -221,12 +238,12 @@ if __name__ == '__main__':
     remove_images_without_matching_masks()
     print('Simplifying images')
     print(str(simplify_images()) + ' images processed')
-    print('Simplifying masks')    
+    print('Simplifying masks')
     print('[Blue, White, Black] = ' + str(simplify_masks()))
-    print('Separating data') 
+    print('Separating data')
     test, valid, train = separate_data()
-    print(str(len(test)) + ' test cases; ' + 
-          str(len(valid)) + ' validation cases; ' + 
+    print(str(len(test)) + ' test cases; ' +
+          str(len(valid)) + ' validation cases; ' +
           str(len(train)) + ' training cases.')
     os.chdir(before)
     print('Done')
