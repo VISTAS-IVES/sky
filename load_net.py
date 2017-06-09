@@ -8,6 +8,7 @@ Created on Fri Jun  2 14:58:47 2017
 
 from net import build_net, get_inputs, WHITE, BLUE, BLACK
 import numpy as np
+import sys
 import tensorflow as tf
 from PIL import Image
 
@@ -39,4 +40,4 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, num, result_dir):
 #        img.save('results/out2.png')
 
 if __name__ == '__main__':
-   load_net(*build_net(), 100000, 'results/test3/')
+   load_net(*build_net(), sys.argv[1], 'results/test3/')
