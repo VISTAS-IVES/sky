@@ -119,16 +119,10 @@ def build_net(learning_rate, layer_sizes):
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
     num_layers = len(layer_sizes)+1
     h = [None] * (num_layers)
-    """uncomment t to test it creates the correct vaues in the convo_layers"""
-    #t = [None] * (num_layers)        
-    #t[0] = (3 , layer_sizes[0], -1)
     h[0] = first_convo_layer(3, layer_sizes[0], x, radii)
     for i in range(1, num_layers-1):
-        #t[i] = (layer_sizes[i-1] , layer_sizes[i], i-1)
         h[i] = convo_layer(layer_sizes[i-1], layer_sizes[i], h[i-1])
-    #t[num_layers-1] = (layer_sizes[num_layers-2], 3, num_layers-2)
     h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, h[num_layers-2])
-    print (t)
     y = tf.reshape(h[num_layers-1], [-1, 3])
     y_ = tf.placeholder(tf.int64, [None])
     cross_entropy = tf.reduce_mean(
@@ -155,7 +149,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_,
             batch = (20160414162830,)
             inputs = get_inputs(batch)
             correct = get_masks(batch)
-            for i in range(1, 10000 + 1):
+            for i in range(1, 200000 + 1):
                 # batch = random.sample(train_stamps, BATCH_SIZE)
                 train_step.run(feed_dict={x: inputs, y_: correct})
                 if i % 1000 == 0:
