@@ -22,14 +22,7 @@ BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
 # Distances from center of an image
-RADII = np.empty((480, 480, 1))
 BATCH_SIZE = 50
-
-"""inputs is a 480x480x3 array, we add the distance from the center
-making it a 480x480x4 array"""
-for r in range(480):
-    for c in range(480):
-        RADII[r, c, 0] = (math.sqrt((239.5 - r) ** 2 + (239.5 - c) ** 2)) / (math.sqrt(2) * 239.5)
 
 
 def scale(img):
@@ -38,6 +31,17 @@ def scale(img):
             img[r, c] = img[r, c] / 255.0
     return img
 
+
+def make_b_mask_boolean(img):
+    black_mask = np.zeros((480,480), dtype=bool)
+    black_mask[(img == BLACK).all(axis=2)] = True
+    return black_mask
+
+
+def give_b_mask_black_values(bool_mask):
+    black_mask = np.zeros((480,480,3), dtype=np.float32)
+    black_mask[bool_mask] = [0.0, 0.0, 10000000.0]
+    return black_mask
 
 def mask_to_one_hot(img):
     """Modifies (and returns) img to have a one-hot vector for each
@@ -97,14 +101,6 @@ def load_validation_batch():
     return valid_inputs, valid_correct
 
 
-def first_convo_layer(num_in, num_out, prev, radii):
-    W = weight_variable([3, 3, num_in, num_out], 3 * 3 * num_in)
-    R = weight_variable([1, 1, 1, num_out], 1)
-    b = bias_variable([num_out])
-    h = tf.nn.relu(conv2d(prev, W) + b + conv2d(radii, R))
-    return h
-
-
 def convo_layer(num_in, num_out, prev):
     W = weight_variable([3, 3, num_in, num_out], 3 * 3 * num_in)
     b = bias_variable([num_out])
@@ -112,23 +108,31 @@ def convo_layer(num_in, num_out, prev):
     return h
 
 
+def mask_layer(last_layer, b_mask):
+    tf.constant(b_mask)
+    return tf.add(b_mask, last_layer)
+
+
 def build_net(learning_rate, layer_sizes):
     print("Building network")
+    bool_mask = make_b_mask_boolean(misc.imread('data/always_black_mask.jpg'))
+    b_mask = give_b_mask_black_values(bool_mask)
     tf.reset_default_graph()
-    radii = tf.constant(np.reshape(RADII, (1, 480, 480, 1)), dtype=tf.float32)
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
     num_layers = len(layer_sizes)+1
     h = [None] * (num_layers)
-    h[0] = first_convo_layer(3, layer_sizes[0], x, radii)
+    h[0] = convo_layer(3, layer_sizes[0], x)
     for i in range(1, num_layers-1):
         h[i] = convo_layer(layer_sizes[i-1], layer_sizes[i], h[i-1])
     h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, h[num_layers-2])
-    y = tf.reshape(h[num_layers-1], [-1, 3])
+    m = mask_layer(h[num_layers-1], b_mask)
+    y = tf.reshape(m, [-1, 3])
     y_ = tf.placeholder(tf.int64, [None])
     cross_entropy = tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))
     train_step = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
     correct_prediction = tf.equal(tf.argmax(y, 1), y_)
+    
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     saver = tf.train.Saver()
     init = tf.global_variables_initializer()

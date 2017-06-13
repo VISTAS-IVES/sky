@@ -39,7 +39,6 @@ GRAY = np.array([192, 192, 192])
 YELLOW = np.array([255, 255, 0])
 WHITE = np.array([255, 255, 255])
 
-
 def create_dirs():
     os.mkdir('skyimage')
     os.mkdir('cldmask')
@@ -101,6 +100,11 @@ def remove_images_without_matching_masks():
 def crop_image(img):
     """Crops img down to 480 x 480."""
     return np.delete(img, np.concatenate((np.arange(80), np.arange(80)+560)), axis=0)
+
+def update_black_mask(img,black_mask):
+    black_mask[(img == WHITE).all(axis=2)] = False
+    black_mask[(img == BLUE).all(axis=2)] = False
+    return black_mask
 
 
 def simplify_images():
@@ -182,16 +186,22 @@ def test_remove():
     img.show()
     return img
 
-
+def black_mask_to_image(mask):
+    img = np.full((480,480, 3), BLUE)
+    img[(mask)] = BLACK
+    return img
+    
 def simplify_masks():
     """Writes similified versions of all images in in_dir to out_dir.
     Returns an array of relative frequencies of BLUE, WHITE, and BLACK."""
     counts = np.zeros(3, dtype=np.int)
+    black_mask = np.ones((480,480), dtype=bool)
     tester = 0
     for file in os.listdir('cldmask/'):
         tester = tester + 1
         img = misc.imread('cldmask/' + file)
         img = crop_image(img)
+        black_mask = update_black_mask(img, black_mask)
         print('About to remove sun from ' + file)
         if (img == YELLOW).all(axis = 2).any():
             print('Sun is yellow')
@@ -202,7 +212,11 @@ def simplify_masks():
         simplified = img
         counts = counts + color_counts(simplified)
         Image.fromarray(simplified).save('simplemask/simplemask' + extract_timestamp(file) + '.png')
-    return counts / counts.sum()
+    
+    black_mask = black_mask_to_image(black_mask)
+    Image.fromarray(black_mask.astype('uint8')).save('always_black_mask.jpg')
+    
+    return (counts / counts.sum())
 
 
 def separate_stamps(stamps):
