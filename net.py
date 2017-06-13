@@ -109,13 +109,13 @@ def convo_layer(num_in, num_out, prev):
 
 
 def mask_layer(last_layer, b_mask):
-    tf.constant(b_mask)
-    return tf.add(b_mask, last_layer)
+    btf_mask = tf.constant(b_mask)
+    return tf.add(btf_mask, last_layer)
 
 
-def build_net(learning_rate, layer_sizes):
+def build_net(learning_rate = 0.0001, layer_sizes = [32, 32]):
     print("Building network")
-    bool_mask = make_b_mask_boolean(misc.imread('data/always_black_mask.jpg'))
+    bool_mask = make_b_mask_boolean(misc.imread('data/always_black_mask.png'))
     b_mask = give_b_mask_black_values(bool_mask)
     tf.reset_default_graph()
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
@@ -153,10 +153,10 @@ def train_net(train_step, accuracy, saver, init, x, y, y_,
             batch = (20160414162830,)
             inputs = get_inputs(batch)
             correct = get_masks(batch)
-            for i in range(1, 200000 + 1):
+            for i in range(1, 300 + 1):
                 # batch = random.sample(train_stamps, BATCH_SIZE)
                 train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 1000 == 0:
+                if i % 30 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
                     train_accuracy = accuracy.eval(feed_dict={
                             x: inputs, y_: correct})
