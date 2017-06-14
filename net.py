@@ -123,7 +123,7 @@ def max_out(inputs, num_units, axis=None):
 def convo_layer(num_in, num_out, prev):
     W = weight_variable([3, 3, num_in, num_out*2], 3 * 3 * num_in)
     b = bias_variable([2*num_out])
-    h = tf.nn.max_out(conv2d(prev, W) + b, num_out)
+    h = max_out(conv2d(prev, W) + b, num_out)
     return h
 
 
