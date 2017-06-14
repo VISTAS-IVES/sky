@@ -17,7 +17,6 @@ import math
 import time
 import random
 import pickle
-from PIL import Image
 
 # Define colors
 BLACK = np.array([0, 0, 0])
@@ -25,23 +24,6 @@ BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
 # Distances from center of an image
 BATCH_SIZE = 50
-
-def one_hot_to_mask(max_indexs, output):
-    """Modifies (and returns) img to have sensible colors in place of
-    one-hot vectors."""
-    output[(max_indexs == 0)] = WHITE
-    output[(max_indexs == 1)] = BLUE
-    output[(max_indexs == 2)] = BLACK
-    return output
-
-def out_to_image(output, n):
-    """Modifies (and returns) the output of the network for the nth image as a
-    human-readable RGB image."""
-    output = output.reshape([-1,480,480,3])[n]
-    outs = output
-    # We use argmax instead of softmax so that we really will get one-hots
-    max_indexes = np.argmax(outs, axis = 2)
-    return one_hot_to_mask(max_indexes, outs)
 
 
 def scale(img):
