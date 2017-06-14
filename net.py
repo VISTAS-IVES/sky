@@ -101,10 +101,29 @@ def load_validation_batch():
     return valid_inputs, valid_correct
 
 
+def max_out(inputs, num_units, axis=None):
+    # This function was taken from the following link
+    # https://github.com/philipperemy/tensorflow-maxout
+    # For information about licensing see the LICENSE file
+    shape = inputs.get_shape().as_list()
+    if shape[0] is None:
+        shape[0] = -1
+    if axis is None:  # Assume that channel is the last dimension
+        axis = -1
+    num_channels = shape[axis]
+    if num_channels % num_units:
+        raise ValueError('number of features({}) is not '
+                         'a multiple of num_units({})'.format(num_channels, num_units))
+    shape[axis] = num_units
+    shape += [num_channels // num_units]
+    outputs = tf.reduce_max(tf.reshape(inputs, shape), -1, keep_dims=False)
+    return outputs
+
+
 def convo_layer(num_in, num_out, prev):
-    W = weight_variable([3, 3, num_in, num_out], 3 * 3 * num_in)
-    b = bias_variable([num_out])
-    h = tf.nn.relu(conv2d(prev, W) + b)
+    W = weight_variable([3, 3, num_in, num_out*2], 3 * 3 * num_in)
+    b = bias_variable([2*num_out])
+    h = tf.nn.max_out(conv2d(prev, W) + b, num_out)
     return h
 
 
