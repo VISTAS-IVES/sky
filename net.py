@@ -6,6 +6,7 @@ Created on Mon May 22 10:20:00 2017
 @author: Jeff Mullins, Sean Richardson
 
 """
+
 import numpy as np
 from scipy import misc
 from datetime import datetime
@@ -16,6 +17,7 @@ import math
 import time
 import random
 import pickle
+from PIL import Image
 
 # Define colors
 BLACK = np.array([0, 0, 0])
@@ -23,6 +25,23 @@ BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
 # Distances from center of an image
 BATCH_SIZE = 50
+
+def one_hot_to_mask(max_indexs, output):
+    """Modifies (and returns) img to have sensible colors in place of
+    one-hot vectors."""
+    output[(max_indexs == 0)] = WHITE
+    output[(max_indexs == 1)] = BLUE
+    output[(max_indexs == 2)] = BLACK
+    return output
+
+def out_to_image(output, n):
+    """Modifies (and returns) the output of the network for the nth image as a
+    human-readable RGB image."""
+    output = output.reshape([-1,480,480,3])[n]
+    outs = output
+    # We use argmax instead of softmax so that we really will get one-hots
+    max_indexes = np.argmax(outs, axis = 2)
+    return one_hot_to_mask(max_indexes, outs)
 
 
 def scale(img):
@@ -66,7 +85,8 @@ def get_inputs(stamps):
     inputs = np.empty((len(stamps), 480, 480, 3))
     for i, s in enumerate(stamps):
         img = np.array(misc.imread('data/simpleimage/simpleimage' + str(s) + '.jpg'))
-        img = scale(img)
+        #img = scale(img)
+        inputs[i] = img
         # inputs[i] = np.concatenate((img, RADII), axis=2)
     return inputs
 
@@ -79,12 +99,13 @@ def get_masks(stamps):
 
 
 def weight_variable(shape, n_inputs):
-    initial = tf.truncated_normal(shape, stddev=2 / math.sqrt(n_inputs))
+    initial = tf.truncated_normal(shape, stddev = 2/math.sqrt(n_inputs))
     return tf.Variable(initial)
 
 
 def bias_variable(shape):
     initial = tf.constant(0.1, shape=shape)
+    #initial = tf.truncated_normal(shape)
     return tf.Variable(initial)
 
 
@@ -120,10 +141,13 @@ def max_out(inputs, num_units, axis=None):
     return outputs
 
 
-def convo_layer(num_in, num_out, prev):
-    W = weight_variable([3, 3, num_in, num_out*2], 3 * 3 * num_in)
-    b = bias_variable([2*num_out])
-    h = max_out(conv2d(prev, W) + b, num_out)
+def convo_layer(num_in, num_out, prev, relu = True):
+    W = weight_variable([3, 3, num_in, num_out], 3 * 3 * num_in)
+    b = bias_variable([num_out])
+    if relu: 
+        h = tf.nn.relu(conv2d(prev, W) + b)
+    else:
+        h = conv2d(prev, W) + b
     return h
 
 
@@ -143,7 +167,7 @@ def build_net(learning_rate = 0.0001, layer_sizes = [32, 32]):
     h[0] = convo_layer(3, layer_sizes[0], x)
     for i in range(1, num_layers-1):
         h[i] = convo_layer(layer_sizes[i-1], layer_sizes[i], h[i-1])
-    h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, h[num_layers-2])
+    h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, h[num_layers-2], False)
     m = mask_layer(h[num_layers-1], b_mask)
     y = tf.reshape(m, [-1, 3])
     y_ = tf.placeholder(tf.int64, [None])
@@ -155,10 +179,10 @@ def build_net(learning_rate = 0.0001, layer_sizes = [32, 32]):
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     saver = tf.train.Saver()
     init = tf.global_variables_initializer()
-    return train_step, accuracy, saver, init, x, y, y_
+    return train_step, accuracy, saver, init, x, y, y_, cross_entropy
 
 
-def train_net(train_step, accuracy, saver, init, x, y, y_,
+def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
               valid_inputs, valid_correct, result_dir):
     print("training network")
     start = time.time()
@@ -175,14 +199,19 @@ def train_net(train_step, accuracy, saver, init, x, y, y_,
             for i in range(1, 100000 + 1):
                 # batch = random.sample(train_stamps, BATCH_SIZE)
                 train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 1000 == 0:
+                if i % 100 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
                     train_accuracy = accuracy.eval(feed_dict={
                             x: inputs, y_: correct})
+                    #entropy = cross_entropy.eval(feed_dict={
+                            #x: inputs, y_: correct})
                     # valid_accuracy = accuracy.eval(feed_dict={
                     # x:valid_inputs, y_:valid_correct})
                     print('{}\t{:1.5f}'.format(i, train_accuracy), file=f, flush=True)
+                    #print('{}\t{:1.5f}'.format(i, train_accuracy))
+
                     # print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)
+                    
         stop = time.time()
         print('Elapsed time: {} seconds'.format(stop - start), file=f, flush=True)
 
@@ -196,3 +225,4 @@ if __name__ == '__main__':
     os.makedirs(out_dir)
     layer_sizes = list(map(int, layer_sizes))
     train_net(*build_net(learning_rate, layer_sizes), *load_validation_batch(), out_dir)
+        

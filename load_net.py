@@ -30,7 +30,7 @@ def out_to_image(output, n):
     max_indexes = np.argmax(outs, axis = 2)
     return one_hot_to_mask(max_indexes, outs)
 
-def load_net(train_step, accuracy, saver, init, x, y, y_, num, result_dir):
+def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, num, result_dir):
      # Train
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(num))
@@ -41,4 +41,4 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, num, result_dir):
 #        img.save('results/out2.png')
 
 if __name__ == '__main__':
-    load_net(*build_net(), sys.argv[1], 'results/test3/')
+    load_net(*build_net(), sys.argv[1], 'results/job_number_2_learning_rate_0.0001_layer_sizes_32_32_20170614144633/')
