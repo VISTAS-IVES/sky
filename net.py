@@ -157,9 +157,8 @@ def build_net(learning_rate = 0.0001, layer_sizes = [32, 32]):
         tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))
     train_step = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
     correct_prediction = tf.equal(tf.argmax(y, 1), y_)
-    
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     saver = tf.train.Saver()
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     init = tf.global_variables_initializer()
     return train_step, accuracy, saver, init, x, y, y_, cross_entropy
 
@@ -169,30 +168,28 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
     print("training network")
     start = time.time()
     # Get image and make the mask into a one-hotted mask
-#    with open('data/train.stamps', 'rb') as f:
-#        train_stamps = pickle.load(f)
+    with open('data/train.stamps', 'rb') as f:
+        train_stamps = pickle.load(f)
     with open(result_dir + 'output.txt', 'w') as f:
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
-            batch = (20160414162830,)
-            inputs = get_inputs(batch)
-            correct = get_masks(batch)
-            for i in range(1, 100000 + 1):
-                # batch = random.sample(train_stamps, BATCH_SIZE)
+            for i in range(1, 10 + 1):
+                batch = random.sample(train_stamps, BATCH_SIZE)
+                inputs = get_inputs(batch)
+                correct = get_masks(batch)
                 train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 100 == 0:
+                if i % 1 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
                     train_accuracy = accuracy.eval(feed_dict={
                             x: inputs, y_: correct})
                     #entropy = cross_entropy.eval(feed_dict={
                             #x: inputs, y_: correct})
-                    # valid_accuracy = accuracy.eval(feed_dict={
-                    # x:valid_inputs, y_:valid_correct})
-                    print('{}\t{:1.5f}'.format(i, train_accuracy), file=f, flush=True)
+                    valid_accuracy = accuracy.eval(feed_dict={
+                            x:valid_inputs, y_:valid_correct})
+                    #print('{}\t{:1.5f}'.format(i, train_accuracy), file=f, flush=True)
                     #print('{}\t{:1.5f}'.format(i, train_accuracy))
-
-                    # print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)
+                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)
                     
         stop = time.time()
         print('Elapsed time: {} seconds'.format(stop - start), file=f, flush=True)
