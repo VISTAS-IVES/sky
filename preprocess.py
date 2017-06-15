@@ -39,6 +39,7 @@ GRAY = np.array([192, 192, 192])
 YELLOW = np.array([255, 255, 0])
 WHITE = np.array([255, 255, 255])
 
+
 def create_dirs():
     os.mkdir('skyimage')
     os.mkdir('cldmask')
@@ -100,11 +101,6 @@ def remove_images_without_matching_masks():
 def crop_image(img):
     """Crops img down to 480 x 480."""
     return np.delete(img, np.concatenate((np.arange(80), np.arange(80)+560)), axis=0)
-
-def update_black_mask(img,black_mask):
-    black_mask[(img == WHITE).all(axis=2)] = False
-    black_mask[(img == BLUE).all(axis=2)] = False
-    return black_mask
 
 
 def simplify_images():
@@ -186,36 +182,52 @@ def test_remove():
     img.show()
     return img
 
+
 def black_mask_to_image(mask):
-    img = np.full((480,480, 3), BLUE)
+    """Takes a mask of booleans and returns an image where each pixel is
+    BLACK if in the mask, BLUE otherwise."""
+    img = np.full((480, 480, 3), BLUE)
     img[(mask)] = BLACK
     return img
-    
+
+
+def update_black_mask(img, black_mask):
+    """Modified black_mask by removing any pixels that are WHITE, BLUE, or
+    GRAY in img."""
+    black_mask[(img == WHITE).all(axis=2)] = False
+    black_mask[(img == BLUE).all(axis=2)] = False
+    black_mask[(img == GRAY).all(axis=2)] = False
+
+
+def find_black_mask():
+    """Creates a mask of pixels which are black or green in every cldmask and
+    saves it to always_black_mask.png."""
+    black_mask = np.ones((480, 480), dtype=bool)
+    for file in os.listdir('cldmask/'):
+        img = misc.imread('cldmask/' + file)
+        img = crop_image(img)
+        update_black_mask(img, black_mask)
+    black_mask = black_mask_to_image(black_mask).astype('uint8')
+    Image.fromarray(black_mask).save('always_black_mask.png')
+
+
 def simplify_masks():
     """Writes similified versions of all images in in_dir to out_dir.
     Returns an array of relative frequencies of BLUE, WHITE, and BLACK."""
     counts = np.zeros(3, dtype=np.int)
-    black_mask = np.ones((480,480), dtype=bool)
-    tester = 0
     for file in os.listdir('cldmask/'):
-        tester = tester + 1
         img = misc.imread('cldmask/' + file)
         img = crop_image(img)
-        black_mask = update_black_mask(img, black_mask)
-#        print('About to remove sun from ' + file)
-#        if (img == YELLOW).all(axis = 2).any():
-#            print('Sun is yellow')
-#        else:
-#            print('Removing white sun')
-#            img = remove_white_sun(img)
-#        simplified = simplify_colors(img)
-#        simplified = img
-#        counts = counts + color_counts(simplified)
-#        Image.fromarray(simplified).save('simplemask/simplemask' + extract_timestamp(file) + '.png')
-    
-    black_mask = black_mask_to_image(black_mask).astype('uint8')
-    Image.fromarray(black_mask).save('always_black_mask.png')
-    
+        print('About to remove sun from ' + file)
+        if (img == YELLOW).all(axis=2).any():
+            print('Sun is yellow')
+        else:
+            print('Removing white sun')
+            img = remove_white_sun(img)
+        simplified = simplify_colors(img)
+        simplified = img
+        counts = counts + color_counts(simplified)
+        Image.fromarray(simplified).save('simplemask/simplemask' + extract_timestamp(file) + '.png')
     return (counts / counts.sum())
 
 
@@ -242,22 +254,24 @@ def separate_data():
 if __name__ == '__main__':
     before = os.getcwd()
     os.chdir('data')
-#    print('Creating directories')
-#    create_dirs()
-#    print('Unpacking tars')
-#    unpack_all_tars()
-#    print('Simplifying names')
-#    simplify_all_names()
-#    print('Removing images without masks')
-#    remove_images_without_matching_masks()
-#    print('Simplifying images')
-#    print(str(simplify_images()) + ' images processed')
+    print('Creating directories')
+    create_dirs()
+    print('Unpacking tars')
+    unpack_all_tars()
+    print('Simplifying names')
+    simplify_all_names()
+    print('Removing images without masks')
+    remove_images_without_matching_masks()
+    print('Simplifying images')
+    print(str(simplify_images()) + ' images processed')
+    print('Finding black mask')
+    find_black_mask()
     print('Simplifying masks')
     print('[Blue, White, Black] = ' + str(simplify_masks()))
-#    print('Separating data')
-#    test, valid, train = separate_data()
-#    print(str(len(test)) + ' test cases; ' +
-#          str(len(valid)) + ' validation cases; ' +
-#          str(len(train)) + ' training cases.')
+    print('Separating data')
+    test, valid, train = separate_data()
+    print(str(len(test)) + ' test cases; ' +
+          str(len(valid)) + ' validation cases; ' +
+          str(len(train)) + ' training cases.')
     os.chdir(before)
     print('Done')
