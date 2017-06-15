@@ -12,13 +12,16 @@ import sys
 with open(sys.argv[1]) as f:
     data = f.readlines()
 
-data = data[1:-1] # Strip off first and last line
+data = data[1:-1]  # Strip off first and last line
 x = [row.split('\t')[0] for row in data]
-y = [row.split('\t')[1] for row in data]
+train = [row.split('\t')[1] for row in data]
+valid = [row.split('\t')[2] for row in data]
 
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
 ax1.set_xlabel('Minibatches')
 ax1.set_ylabel('Accuracy')
-ax1.plot(x,y)
+t, = ax1.plot(x, train, 'r', label='training')
+v, = ax1.plot(x, valid, 'b', label='validation')
+ax1.legend(handles=[t, v])
 plt.show()
