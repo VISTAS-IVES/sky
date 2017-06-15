@@ -41,4 +41,4 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, num, re
 #        img.save('results/out2.png')
 
 if __name__ == '__main__':
-    load_net(*build_net(), sys.argv[1], 'results/job_number_2_learning_rate_0.0001_layer_sizes_32_32_20170614144633/')
+    load_net(*build_net(), sys.argv[1], 'results/test3/')
