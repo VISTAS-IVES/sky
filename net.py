@@ -34,21 +34,25 @@ def scale(img):
 
 
 def make_b_mask_boolean(img):
-    black_mask = np.zeros((480,480), dtype=bool)
+    """Takes a black/non-black image and return a corresponding True/False mask."""
+    black_mask = np.zeros((480, 480), dtype=bool)
     black_mask[(img == BLACK).all(axis=2)] = True
     return black_mask
 
 
 def give_b_mask_black_values(bool_mask):
-    black_mask = np.zeros((480,480,3), dtype=np.float32)
+    """Takes a boolean mask and returns a 3-channel image with [0, 0, 1e7]
+    where the mask is True, [0, 0, 0] elsewhere."""
+    black_mask = np.zeros((480, 480, 3), dtype=np.float32)
     black_mask[bool_mask] = [0.0, 0.0, 10000000.0]
     return black_mask
+
 
 def mask_to_one_hot(img):
     """Modifies (and returns) img to have a one-hot vector for each
     pixel."""
     img[(img == WHITE).all(axis=2)] = np.array([1, 0, 0])
-    img[(img == BLUE).all(axis=2)]  = np.array([0, 1, 0])
+    img[(img == BLUE).all(axis=2)] = np.array([0, 1, 0])
     img[(img == BLACK).all(axis=2)] = np.array([0, 0, 1])
     return img
 
@@ -58,22 +62,25 @@ def mask_to_index(img):
     for each pixel."""
     result = np.ndarray(shape=[img.shape[0], img.shape[1]])
     result[(img == WHITE).all(axis=2)] = 0
-    result[(img == BLUE).all(axis=2)]  = 1
+    result[(img == BLUE).all(axis=2)] = 1
     result[(img == BLACK).all(axis=2)] = 2
     return result
 
 
 def get_inputs(stamps):
+    """Returns a tensor of images specified by stamps. Dimensions are: image,
+    row, column, color."""
     inputs = np.empty((len(stamps), 480, 480, 3))
     for i, s in enumerate(stamps):
         img = np.array(misc.imread('data/simpleimage/simpleimage' + str(s) + '.jpg'))
-        #img = scale(img)
         inputs[i] = img
-        # inputs[i] = np.concatenate((img, RADII), axis=2)
     return inputs
 
 
 def get_masks(stamps):
+    """Returns a tensor of correct label categories specified by stamps.
+    Dimensons are image, row, column. The tensor has been flattened into a
+    single vector."""
     masks = np.empty((len(stamps), 480, 480))
     for i, s in enumerate(stamps):
         masks[i] = mask_to_index(np.array(misc.imread('data/simplemask/simplemask' + str(s) + '.png')))
@@ -81,13 +88,12 @@ def get_masks(stamps):
 
 
 def weight_variable(shape, n_inputs):
-    initial = tf.truncated_normal(shape, stddev = 2/math.sqrt(n_inputs))
+    initial = tf.truncated_normal(shape, stddev=(2 / math.sqrt(n_inputs)))
     return tf.Variable(initial)
 
 
 def bias_variable(shape):
     initial = tf.constant(0.1, shape=shape)
-    #initial = tf.truncated_normal(shape)
     return tf.Variable(initial)
 
 
@@ -115,7 +121,7 @@ def max_out(inputs, num_units, axis=None):
         axis = -1
     num_channels = shape[axis]
     if num_channels % num_units:
-        raise ValueError('number of features({}) is not '
+        raise ValueError('number of features({}) is not ' +
                          'a multiple of num_units({})'.format(num_channels, num_units))
     shape[axis] = num_units
     shape += [num_channels // num_units]
@@ -123,10 +129,10 @@ def max_out(inputs, num_units, axis=None):
     return outputs
 
 
-def convo_layer(num_in, num_out, prev, relu = True):
+def convo_layer(num_in, num_out, prev, relu=True):
     W = weight_variable([3, 3, num_in, num_out], 3 * 3 * num_in)
     b = bias_variable([num_out])
-    if relu: 
+    if relu:
         h = tf.nn.relu(conv2d(prev, W) + b)
     else:
         h = conv2d(prev, W) + b
@@ -138,7 +144,7 @@ def mask_layer(last_layer, b_mask):
     return tf.add(btf_mask, last_layer)
 
 
-def build_net(learning_rate = 0.0001, layer_sizes = [32, 32]):
+def build_net(learning_rate=0.0001, layer_sizes=[32, 32]):
     print("Building network")
     bool_mask = make_b_mask_boolean(misc.imread('data/always_black_mask.png'))
     b_mask = give_b_mask_black_values(bool_mask)
@@ -174,23 +180,18 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
-            for i in range(1, 10 + 1):
+            for i in range(1, 100000 + 1):
                 batch = random.sample(train_stamps, BATCH_SIZE)
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
                 train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 1 == 0:
+                if i % 100 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
                     train_accuracy = accuracy.eval(feed_dict={
                             x: inputs, y_: correct})
-                    #entropy = cross_entropy.eval(feed_dict={
-                            #x: inputs, y_: correct})
                     valid_accuracy = accuracy.eval(feed_dict={
-                            x:valid_inputs, y_:valid_correct})
-                    #print('{}\t{:1.5f}'.format(i, train_accuracy), file=f, flush=True)
-                    #print('{}\t{:1.5f}'.format(i, train_accuracy))
-                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)
-                    
+                            x: valid_inputs, y_: valid_correct})
+                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                 
         stop = time.time()
         print('Elapsed time: {} seconds'.format(stop - start), file=f, flush=True)
 
@@ -204,4 +205,4 @@ if __name__ == '__main__':
     os.makedirs(out_dir)
     layer_sizes = list(map(int, layer_sizes))
     train_net(*build_net(learning_rate, layer_sizes), *load_validation_batch(), out_dir)
-        
+ 
