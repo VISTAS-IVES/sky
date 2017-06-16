@@ -46,4 +46,4 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_
 if __name__ == '__main__':
     layer_sizes = list(map(int, sys.argv[4::]))
     # Command line arguments are: iteration number, name of directory (within results), layer_sizes
-    load_net(*build_net(0, layer_sizes, kernel_width=int(sys.argv[3])), 'results/' + str(sys.argv[1]) + '/', sys.argv[2])
+    load_net(*build_net(0, int(sys.argv[3]), layer_sizes), 'results/' + str(sys.argv[1]) + '/', sys.argv[2])
