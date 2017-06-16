@@ -17,6 +17,7 @@ import math
 import time
 import random
 import pickle
+import subprocess
 
 # Define colors
 BLACK = np.array([0, 0, 0])
@@ -24,6 +25,15 @@ BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
 # Distances from center of an image
 BATCH_SIZE = 50
+
+def save_params(job_number, learning_rate, kernel_width, layer_sizes, out_dir):
+    F = open(out_dir + 'Experiment_Parameters.txt',"w+")
+    F.write("Job number:\t" + str(job_number) + "\n")
+    F.write("Learning Rate:\t" + str(learning_rate) + "\n")
+    F.write("Kernel Width:\t" + str(kernel_width) + "\n")
+    F.write("Layer Sizes:\t" + ' '.join(layer_sizes) + "\n")
+    label = subprocess.check_output(["git", "rev-parse", "HEAD"])
+    F.write("Git Commit:\t" + str(label)[2:-3:] + "\n")
 
 
 def scale(img):
@@ -129,8 +139,7 @@ def max_out(inputs, num_units, axis=None):
     return outputs
 
 
-def convo_layer(num_in, num_out, prev, relu=True):
-    width = 7  # Later we'll make this an argument
+def convo_layer(num_in, num_out, width, prev, relu=True):
     W = weight_variable([width, width, num_in, num_out], width * width * num_in)
     b = bias_variable([num_out])
     if relu:
@@ -145,7 +154,7 @@ def mask_layer(last_layer, b_mask):
     return tf.add(btf_mask, last_layer)
 
 
-def build_net(learning_rate=0.0001, layer_sizes=[32, 32]):
+def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
     print("Building network")
     bool_mask = make_b_mask_boolean(misc.imread('data/always_black_mask.png'))
     b_mask = give_b_mask_black_values(bool_mask)
@@ -153,10 +162,10 @@ def build_net(learning_rate=0.0001, layer_sizes=[32, 32]):
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
     num_layers = len(layer_sizes)+1
     h = [None] * (num_layers)
-    h[0] = convo_layer(3, layer_sizes[0], x)
+    h[0] = convo_layer(3, layer_sizes[0], kernel_width, x)
     for i in range(1, num_layers-1):
-        h[i] = convo_layer(layer_sizes[i-1], layer_sizes[i], h[i-1])
-    h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, h[num_layers-2], False)
+        h[i] = convo_layer(layer_sizes[i-1], layer_sizes[i], kernel_width, h[i-1])
+    h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, kernel_width, h[num_layers-2], False)
     m = mask_layer(h[num_layers-1], b_mask)
     y = tf.reshape(m, [-1, 3])
     y_ = tf.placeholder(tf.int64, [None])
@@ -200,10 +209,12 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
 if __name__ == '__main__':
     job_number = sys.argv[1]
     learning_rate = float(sys.argv[2])
-    layer_sizes = sys.argv[3::]
+    kernel_width = int(sys.argv[3])
+    layer_sizes = sys.argv[4::]
     layer_sizes_print = '_'.join(layer_sizes)
-    out_dir = 'results/job_number_' + job_number + '_' + 'learning_rate_' + str(learning_rate) + '_' + 'layer_sizes_' + layer_sizes_print + '_' + datetime.now().strftime('%Y%m%d%H%M%S') + '/'
+    out_dir = 'results/job_number_' + job_number + '_' + 'learning_rate_' + str(learning_rate) + 'kernel_width' + str(kernel_width) + '_' + 'layer_sizes_' + layer_sizes_print + '_' + datetime.now().strftime('%Y%m%d%H%M%S') + '/'
     os.makedirs(out_dir)
+    save_params(job_number, learning_rate, kernel_width, layer_sizes, out_dir)
     layer_sizes = list(map(int, layer_sizes))
-    train_net(*build_net(learning_rate, layer_sizes), *load_validation_batch(), out_dir)
+    train_net(*build_net(learning_rate, kernel_width, layer_sizes), *load_validation_batch(), out_dir)
  

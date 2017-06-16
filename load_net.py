@@ -29,13 +29,6 @@ def out_to_image(output):
     max_indexes = np.argmax(output, axis=3)
     return one_hot_to_mask(max_indexes, output)
 
-def load_stamps(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_dir, num, stamps):
-    with tf.Session() as sess:
-        saver.restore(sess, result_dir + 'weights-' + str(num))
-        inputs = get_inputs(stamps)
-        outputs = out_to_image(y.eval(feed_dict={x: inputs}))
-        return outputs.reshape(-1, 480, 480, 3)
-
 def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_dir, num):
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(num))
