@@ -46,5 +46,6 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_
         img.save(result_dir + 'net-output.png')
 
 if __name__ == '__main__':
-    # Command line arguments are: iteration number, name of directory (within results)
-    load_net(*build_net(), 'results/' + str(sys.argv[1]) + '/', sys.argv[2])
+    layer_sizes = list(map(int, sys.argv[3::]))
+    # Command line arguments are: iteration number, name of directory (within results), layer_sizes
+    load_net(*build_net(0, layer_sizes), 'results/' + str(sys.argv[1]) + '/', sys.argv[2])
