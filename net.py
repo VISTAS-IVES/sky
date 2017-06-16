@@ -130,7 +130,8 @@ def max_out(inputs, num_units, axis=None):
 
 
 def convo_layer(num_in, num_out, prev, relu=True):
-    W = weight_variable([3, 3, num_in, num_out], 3 * 3 * num_in)
+    width = 7  # Later we'll make this an argument
+    W = weight_variable([width, width, num_in, num_out], width * width * num_in)
     b = bias_variable([num_out])
     if relu:
         h = tf.nn.relu(conv2d(prev, W) + b)

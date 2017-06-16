@@ -61,8 +61,8 @@ def find_worst_results(time_stamps = None, directory = "job_number_2_learning_ra
 if __name__ == '__main__':
     #before = os.getcwd()
     #os.chdir('data')
-    img1 = np.array(misc.imread('data/simplemask/' + 'simplemask20160414162600.png'))
-    img2 = np.array(misc.imread('data/simplemask/' + 'simplemask20160414162530.png'))
+    img1 = np.array(misc.imread('data/simplemask/' + 'simplemask20160414162830.png'))
+    img2 = np.array(misc.imread('results/test3/' + 'net-output.png'))
     make_compared_image(img1, img2)
 #    
 #    load_stamps(*build_net(), 'results/' + str(sys.argv[1]) + '/', sys.argv[2])
