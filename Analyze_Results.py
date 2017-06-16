@@ -46,6 +46,8 @@ def find_num_disagreeing_pixels(result, mask):
 def find_worst_results(time_stamps = None, directory = "job_number_2_learning_rate_0.0001_layer_sizes_32_32_20170615162911", step_version = 3):
     time_stamps = get_valid_stamps()
     results = load_stamps(*build_net(), 'results/' + str(directory) + '/', step_version, time_stamps)
+    
+    
     print (results)
     for r in results:
         
