@@ -73,8 +73,8 @@ def load_stamps(train_step, accuracy, saver, init, x, y, y_, cross_entropy, resu
         outputs = out_to_image(y.eval(feed_dict={x: inputs}))
         return outputs.reshape(-1, 480, 480, 3)
 
-def find_worst_results(num_worst, time_stamps, directory, step_version):
-    train_step, accuracy, saver, init, x, y, y_, cross_entropy = build_net()
+def find_worst_results(num_worst, time_stamps, directory, step_version, kernel, layers):
+    train_step, accuracy, saver, init, x, y, y_, cross_entropy = build_net(kernel_width = kernel, layer_sizes = layers)
     with tf.Session() as sess:
         saver.restore(sess, directory + 'weights-' + str(step_version))
         time_stamps = get_valid_stamps()
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     step_version = int(sys.argv[2])
     kernel = int(sys.argv[3])
     layers = list(map(int, sys.argv[4::]))
-    worst_time_stamps = find_worst_results(5, time_stamps, directory, step_version)
+    worst_time_stamps = find_worst_results(5, time_stamps, directory, step_version, kernel, layers)
     print ("Worst time stamps:\t" + str(worst_time_stamps))
     results = load_stamps(*build_net(kernel_width = kernel, layer_sizes = layers), directory, step_version, worst_time_stamps)
     masks = get_masks(worst_time_stamps)
