@@ -38,6 +38,7 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_
         img = out_to_image(y.eval(feed_dict={x: inputs}))
         img = Image.fromarray(img.astype('uint8'))
         img.show()
+        img.save(result_dir + 'net-output.png')
 
 if __name__ == '__main__':
     # Command line arguments are: iteration number, name of directory (within results)
