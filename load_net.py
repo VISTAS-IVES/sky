@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
+Command line arguments:
+directory_name step_version kernel_width layer_1_size layer_2_size ... layer_n_size
+
+
 Created on Fri Jun  2 14:58:47 2017
 
 @author: drake
@@ -29,9 +34,9 @@ def out_to_image(output):
     max_indexes = np.argmax(output, axis=3)
     return one_hot_to_mask(max_indexes, output)
 
-def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_dir, num):
+def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_dir, num_iterations):
     with tf.Session() as sess:
-        saver.restore(sess, result_dir + 'weights-' + str(num))
+        saver.restore(sess, result_dir + 'weights-' + str(num_iterations))
         inputs = get_inputs([20160414162830])
         img = out_to_image(y.eval(feed_dict={x: inputs}))[0]
         img = Image.fromarray(img.astype('uint8'))
@@ -39,6 +44,6 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_
         img.save(result_dir + 'net-output.png')
 
 if __name__ == '__main__':
-    layer_sizes = list(map(int, sys.argv[3::]))
+    layer_sizes = list(map(int, sys.argv[4::]))
     # Command line arguments are: iteration number, name of directory (within results), layer_sizes
-    load_net(*build_net(0, layer_sizes), 'results/' + str(sys.argv[1]) + '/', sys.argv[2])
+    load_net(*build_net(0, layer_sizes, kernel_width=int(sys.argv[3])), 'results/' + str(sys.argv[1]) + '/', sys.argv[2])

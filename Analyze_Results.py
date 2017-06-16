@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Command line arguments:
+directory_name step_version kernel_width
+
+
 Created on Thu Jun 15 15:32:13 2017
 
 @author: jeffmullins
@@ -96,7 +100,6 @@ if __name__ == '__main__':
     directory = 'results/' + sys.argv[1] + '/'
     step_version = int(sys.argv[2])
     kernel = int(sys.argv[3])
-    
     worst_time_stamps = find_worst_results(5, time_stamps, directory, step_version)
     print ("Worst time stamps:\t" + str(worst_time_stamps))
     results = load_stamps(*build_net(kernel_width = kernel), directory, step_version, worst_time_stamps)
