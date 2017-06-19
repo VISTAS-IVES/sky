@@ -122,7 +122,7 @@ def conv2d(x, W):
 def load_validation_batch():
     with open('data/valid.stamps', 'rb') as f:
         valid_stamps = pickle.load(f)
-    valid_stamps = valid_stamps[:3]
+    valid_stamps = valid_stamps[:BATCH_SIZE]
     valid_inputs = get_inputs(valid_stamps)
     valid_correct = get_masks(valid_stamps)
     return valid_inputs, valid_correct
