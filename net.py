@@ -24,7 +24,7 @@ BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
 # Distances from center of an image
-BATCH_SIZE = 50
+BATCH_SIZE = 3
 
 def save_params(job_number, learning_rate, kernel_width, layer_sizes, out_dir):
     F = open(out_dir + 'Experiment_Parameters.txt',"w+")
@@ -34,6 +34,7 @@ def save_params(job_number, learning_rate, kernel_width, layer_sizes, out_dir):
     F.write("Layer Sizes:\t" + ' '.join(layer_sizes) + "\n")
     label = subprocess.check_output(["git", "rev-parse", "HEAD"])
     F.write("Git Commit:\t" + str(label)[2:-3:] + "\n")
+
 
 
 def scale(img):
@@ -114,7 +115,7 @@ def conv2d(x, W):
 def load_validation_batch():
     with open('data/valid.stamps', 'rb') as f:
         valid_stamps = pickle.load(f)
-    valid_stamps = valid_stamps[:50]
+    valid_stamps = valid_stamps[:3]
     valid_inputs = get_inputs(valid_stamps)
     valid_correct = get_masks(valid_stamps)
     return valid_inputs, valid_correct
@@ -190,12 +191,12 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
-            for i in range(1, 5000 + 1):
+            for i in range(1, 100 + 1):
                 batch = random.sample(train_stamps, BATCH_SIZE)
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
                 train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 100 == 0:
+                if i % 1 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
                     train_accuracy = accuracy.eval(feed_dict={
                             x: inputs, y_: correct})
