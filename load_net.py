@@ -3,7 +3,7 @@
 
 """
 Command line arguments:
-directory_name step_version kernel_width layer_1_size layer_2_size ... layer_n_size
+directory_name
 
 
 Created on Fri Jun  2 14:58:47 2017

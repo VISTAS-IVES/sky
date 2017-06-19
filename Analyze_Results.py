@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Command line arguments:
-directory_name step_version kernel_width
+directory_name
 
 
 Created on Thu Jun 15 15:32:13 2017

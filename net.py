@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Command line arguments:
+job_number learning_rate kernel_width layer_size_1 ... layer_size_n
+
 Created on Mon May 22 10:20:00 2017
 
 @author: Jeff Mullins, Sean Richardson
@@ -25,6 +28,11 @@ BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
 # Distances from center of an image
 BATCH_SIZE = 3
+
+def check_for_commit():
+    label = subprocess.check_output(["git", "status", "--untracked-files=no", "--porcelain"])
+    if (0 != (str(label).count('\\n'))):
+        raise Exception('Not in clean git state\n')
 
 def save_params(job_number, learning_rate, kernel_width, layer_sizes, out_dir):
     F = open(out_dir + 'parameters.txt',"w+")
@@ -208,18 +216,15 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
         F.close()
 
 if __name__ == '__main__':
-    label = subprocess.check_output(["git", "status", "--untracked-files=no", "--porcelain"])
-    if (1 ==(str(label).count('\\n'))):
-        job_number = sys.argv[1]
-        learning_rate = float(sys.argv[2])
-        kernel_width = int(sys.argv[3])
-        layer_sizes = sys.argv[4::]
-        layer_sizes_print = '_'.join(layer_sizes)
-        out_dir = 'results/job_number_' + job_number + '_' + 'learning_rate_' + str(learning_rate) + 'kernel_width' + str(kernel_width) + '_' + 'layer_sizes_' + layer_sizes_print + '_' + datetime.now().strftime('%Y%m%d%H%M%S') + '/'
-        os.makedirs(out_dir)
-        save_params(job_number, learning_rate, kernel_width, layer_sizes, out_dir)
-        layer_sizes = list(map(int, layer_sizes))
-        train_net(*build_net(learning_rate, kernel_width, layer_sizes), *load_validation_batch(), out_dir)
-    else:
-        raise Exception('Not in clean git state\n')
+    check_for_commit()
+    job_number = sys.argv[1]
+    learning_rate = float(sys.argv[2])
+    kernel_width = int(sys.argv[3])
+    layer_sizes = sys.argv[4::]
+    layer_sizes_print = '_'.join(layer_sizes)
+    out_dir = 'results/job_number_' + job_number + '_' + 'learning_rate_' + str(learning_rate) + 'kernel_width' + str(kernel_width) + '_' + 'layer_sizes_' + layer_sizes_print + '_' + datetime.now().strftime('%Y%m%d%H%M%S') + '/'
+    os.makedirs(out_dir)
+    save_params(job_number, learning_rate, kernel_width, layer_sizes, out_dir)
+    layer_sizes = list(map(int, layer_sizes))
+    train_net(*build_net(learning_rate, kernel_width, layer_sizes), *load_validation_batch(), out_dir)
  
