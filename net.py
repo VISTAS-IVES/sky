@@ -115,7 +115,7 @@ def conv2d(x, W):
 def load_validation_batch():
     with open('data/valid.stamps', 'rb') as f:
         valid_stamps = pickle.load(f)
-    valid_stamps = valid_stamps[:3]
+    valid_stamps = valid_stamps[:BATCH_SIZE]
     valid_inputs = get_inputs(valid_stamps)
     valid_correct = get_masks(valid_stamps)
     return valid_inputs, valid_correct
@@ -191,7 +191,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
-            for i in range(1, 100 + 1):
+            for i in range(1, 10 + 1):
                 batch = random.sample(train_stamps, BATCH_SIZE)
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
