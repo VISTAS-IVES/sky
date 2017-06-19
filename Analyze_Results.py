@@ -31,7 +31,7 @@ import pickle
 
 
 def read_in(directory):
-    F = open(directory + 'Experiment_Parameters.txt',"r")
+    F = open(directory + 'parameters.txt',"r")
     file = F.readlines()
     args = []
     for line in file:

@@ -18,7 +18,7 @@ import tensorflow as tf
 from PIL import Image
 
 def read_in(directory):
-    F = open(directory + 'Experiment_Parameters.txt',"r")
+    F = open(directory + 'parameters.txt',"r")
     file = F.readlines()
     args = []
     for line in file:

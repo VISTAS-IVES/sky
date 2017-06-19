@@ -27,15 +27,14 @@ WHITE = np.array([255, 255, 255])
 BATCH_SIZE = 3
 
 def save_params(job_number, learning_rate, kernel_width, layer_sizes, out_dir):
-    F = open(out_dir + 'Experiment_Parameters.txt',"w+")
+    F = open(out_dir + 'parameters.txt',"w+")
     F.write("Job number:\t" + str(job_number) + "\n")
-    F.write("Learning Rate:\t" + str(learning_rate) + "\n")
-    F.write("Kernel Width:\t" + str(kernel_width) + "\n")
-    F.write("Layer Sizes:\t" + ' '.join(layer_sizes) + "\n")
+    F.write("Learning rate:\t" + str(learning_rate) + "\n")
+    F.write("Kernel width:\t" + str(kernel_width) + "\n")
+    F.write("Layer sizes:\t" + ' '.join(layer_sizes) + "\n")
     label = subprocess.check_output(["git", "rev-parse", "HEAD"])
-    F.write("Git Commit:\t" + str(label)[2:-3:] + "\n")
-
-
+    F.write("Git commit:\t" + str(label)[2:-3:] + "\n")
+    F.close()
 
 def scale(img):
     for r in range(480):
@@ -191,7 +190,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
-            for i in range(1, 100 + 1):
+            for i in range(1, 1 + 1):
                 batch = random.sample(train_stamps, BATCH_SIZE)
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
@@ -204,10 +203,13 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
                             x: valid_inputs, y_: valid_correct})
                     print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                 
         stop = time.time()
-        print('Elapsed time: {} seconds'.format(stop - start), file=f, flush=True)
-
+        F = open(out_dir + 'parameters.txt',"a")
+        F.write("Elapsed time:\t" + str(stop - start) + " seconds\n")
+        F.close()
 
 if __name__ == '__main__':
+    label = subprocess.check_output(["git", "status"])
+    print (str(label))    
     job_number = sys.argv[1]
     learning_rate = float(sys.argv[2])
     kernel_width = int(sys.argv[3])
