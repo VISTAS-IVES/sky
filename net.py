@@ -222,7 +222,7 @@ if __name__ == '__main__':
     kernel_width = int(sys.argv[3])
     layer_sizes = sys.argv[4::]
     layer_sizes_print = '_'.join(layer_sizes)
-    out_dir = 'results/job_number_' + job_number + '_' + 'learning_rate_' + str(learning_rate) + 'kernel_width' + str(kernel_width) + '_' + 'layer_sizes_' + layer_sizes_print + '_' + datetime.now().strftime('%Y%m%d%H%M%S') + '/'
+    out_dir = 'results/exp' + job_number + '/'
     os.makedirs(out_dir)
     save_params(job_number, learning_rate, kernel_width, layer_sizes, out_dir)
     layer_sizes = list(map(int, layer_sizes))
