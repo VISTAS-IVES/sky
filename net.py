@@ -170,10 +170,13 @@ def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
     num_layers = len(layer_sizes)+1
     h = [None] * (num_layers)
-    h[0] = convo_layer(3, layer_sizes[0], kernel_width, x)
-    for i in range(1, num_layers-1):
-        h[i] = convo_layer(layer_sizes[i-1], layer_sizes[i], kernel_width, h[i-1])
-    h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, kernel_width, h[num_layers-2], False)
+    if (num_layers > 1):
+        h[0] = convo_layer(3, layer_sizes[0], kernel_width, x)
+        for i in range(1, num_layers-1):
+            h[i] = convo_layer(layer_sizes[i-1], layer_sizes[i], kernel_width, h[i-1])
+        h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, kernel_width, h[num_layers-2], False)
+    else:
+        h[0] = convo_layer(3, 3, kernel_width, x, False)
     m = mask_layer(h[num_layers-1], b_mask)
     y = tf.reshape(m, [-1, 3])
     y_ = tf.placeholder(tf.int64, [None])
