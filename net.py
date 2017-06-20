@@ -21,13 +21,36 @@ import time
 import random
 import pickle
 import subprocess
+import tensorflow.contrib.slim as slim
+
+import matplotlib.pyplot as plt
+
+#takes the layer and the image being used
+def getActivations(layer,stimuli):
+    sess = tf.Session()
+    keep_prob = tf.placeholder("float")
+    x = tf.placeholder(tf.float32, [None, 480*480*3],name="x-in")
+    units = sess.run(layer,feed_dict={x:np.reshape(stimuli,[1,480*480*3],order='F'), keep_prob:1.0})
+    plotNNFilter(units)
+    
+
+def plotNNFilter(units):
+    filters = units.shape[3]
+    plt.figure(1, figsize=(20,20))
+    n_columns = 6
+    n_rows = math.ceil(filters / n_columns) + 1
+    for i in range(filters):
+        plt.subplot(n_rows, n_columns, i+1)
+        plt.title('Filter ' + str(i))
+        plt.imshow(units[0,:,:,i], interpolation="nearest", cmap="gray")
+
 
 # Define colors
 BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
 # Distances from center of an image
-BATCH_SIZE = 50
+BATCH_SIZE = 5
 
 def check_for_commit():
     label = subprocess.check_output(["git", "status", "--untracked-files=no", "--porcelain"])
@@ -187,10 +210,10 @@ def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
     saver = tf.train.Saver()
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     init = tf.global_variables_initializer()
-    return train_step, accuracy, saver, init, x, y, y_, cross_entropy
+    return train_step, accuracy, saver, init, x, y, y_, cross_entropy, h[0]
 
 
-def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
+def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, hidden,
               valid_inputs, valid_correct, result_dir):
     print("Training network")
     start = time.time()
@@ -201,12 +224,12 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
-            for i in range(1, 2000 + 1):
+            for i in range(1, 5 + 1):
                 batch = random.sample(train_stamps, BATCH_SIZE)
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
                 train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 100 == 0:
+                if i % 1 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
                     train_accuracy = accuracy.eval(feed_dict={
                             x: inputs, y_: correct})
@@ -214,6 +237,10 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
                             x: valid_inputs, y_: valid_correct})
                     print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                 
         stop = time.time()
+        
+        example = np.array(misc.imread('data/simplemask/simplemask20160414163400.png'))
+        getActivations(hidden,example)
+        
         F = open(out_dir + 'parameters.txt',"a")
         F.write("Elapsed time:\t" + str(stop - start) + " seconds\n")
         F.close()
