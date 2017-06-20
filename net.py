@@ -201,7 +201,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
-            for i in range(1, 2000 + 1):
+            for i in range(1, 5000 + 1):
                 batch = random.sample(train_stamps, BATCH_SIZE)
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)

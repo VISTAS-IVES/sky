@@ -12,7 +12,7 @@ import sys
 with open(sys.argv[1]) as f:
     data = f.readlines()
 
-data = data[1:-1]  # Strip off first and last line
+data = data[1:]  # Strip off first and last line
 x = [row.split('\t')[0] for row in data]
 train = [row.split('\t')[1] for row in data]
 valid = [row.split('\t')[2] for row in data]
