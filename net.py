@@ -189,7 +189,7 @@ def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
 
 def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
               valid_inputs, valid_correct, result_dir):
-    print("training network")
+    print("Training network")
     start = time.time()
     # Get image and make the mask into a one-hotted mask
     with open('data/train.stamps', 'rb') as f:
