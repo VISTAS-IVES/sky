@@ -22,35 +22,15 @@ import random
 import pickle
 import subprocess
 import tensorflow.contrib.slim as slim
-
-import matplotlib.pyplot as plt
-
-#takes the layer and the image being used
-def getActivations(layer,stimuli):
-    sess = tf.Session()
-    keep_prob = tf.placeholder("float")
-    x = tf.placeholder(tf.float32, [None, 480*480*3],name="x-in")
-    units = sess.run(layer,feed_dict={x:np.reshape(stimuli,[1,480*480*3],order='F'), keep_prob:1.0})
-    plotNNFilter(units)
-    
-
-def plotNNFilter(units):
-    filters = units.shape[3]
-    plt.figure(1, figsize=(20,20))
-    n_columns = 6
-    n_rows = math.ceil(filters / n_columns) + 1
-    for i in range(filters):
-        plt.subplot(n_rows, n_columns, i+1)
-        plt.title('Filter ' + str(i))
-        plt.imshow(units[0,:,:,i], interpolation="nearest", cmap="gray")
-
+from math import sqrt
+from PIL import Image
 
 # Define colors
 BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
 # Distances from center of an image
-BATCH_SIZE = 5
+BATCH_SIZE = 50
 
 def check_for_commit():
     label = subprocess.check_output(["git", "status", "--untracked-files=no", "--porcelain"])
@@ -128,9 +108,11 @@ def get_masks(stamps):
     return masks.reshape((-1))
 
 
-def weight_variable(shape, n_inputs):
+def weight_variable(shape, n_inputs, num):
     initial = tf.truncated_normal(shape, stddev=(2 / math.sqrt(n_inputs)))
-    return tf.Variable(initial)
+    with tf.name_scope('conv' + str(num)):
+        W = tf.Variable(initial, name = 'weights')
+    return W
 
 
 def bias_variable(shape):
@@ -138,8 +120,8 @@ def bias_variable(shape):
     return tf.Variable(initial)
 
 
-def conv2d(x, W):
-    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+def conv2d(x, W, num):
+    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME', name = 'conv'+str(num))
 
 
 def load_validation_batch():
@@ -169,16 +151,31 @@ def max_out(inputs, num_units, axis=None):
     outputs = tf.reduce_max(tf.reshape(inputs, shape), -1, keep_dims=False)
     return outputs
 
+#old convo layer code
+#def convo_layer(num_in, num_out, width, prev, num, relu=True):
+#    W = weight_variable([width, width, num_in, num_out], width * width * num_in, num)
+#    b = bias_variable([num_out])
+#    if relu:
+#        h = tf.nn.relu(conv2d(prev, W, num) + b)
+#    else:
+#        h = conv2d(prev, W, num) + b
+#    return h
 
-def convo_layer(num_in, num_out, width, prev, relu=True):
-    W = weight_variable([width, width, num_in, num_out], width * width * num_in)
-    b = bias_variable([num_out])
-    if relu:
-        h = tf.nn.relu(conv2d(prev, W) + b)
-    else:
-        h = conv2d(prev, W) + b
+
+def convo_layer(num_in, num_out, width, prev, num, relu=True):
+    
+    with tf.variable_scope('hidden' + str(num)):
+        initial = tf.truncated_normal([width, width, num_in, num_out], stddev=(2 / math.sqrt(width * width * num_in)))
+        W = tf.get_variable("weights", initializer = initial)
+        initial = tf.constant(0.1, shape=[num_out])
+        b = tf.Variable(initial, name='biases')
+        if relu:
+            h = tf.nn.relu(conv2d(prev, W, num) + b)
+        else:
+            h = conv2d(prev, W, num) + b   
     return h
 
+      
 
 def mask_layer(last_layer, b_mask):
     btf_mask = tf.constant(b_mask)
@@ -194,12 +191,12 @@ def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
     num_layers = len(layer_sizes)+1
     h = [None] * (num_layers)
     if (num_layers > 1):
-        h[0] = convo_layer(3, layer_sizes[0], kernel_width, x)
+        h[0] = convo_layer(3, layer_sizes[0], kernel_width, x, 0)
         for i in range(1, num_layers-1):
-            h[i] = convo_layer(layer_sizes[i-1], layer_sizes[i], kernel_width, h[i-1])
-        h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, kernel_width, h[num_layers-2], False)
+            h[i] = convo_layer(layer_sizes[i-1], layer_sizes[i], kernel_width, h[i-1], i)
+        h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, kernel_width, h[num_layers-2], num_layers-1, False)
     else:
-        h[0] = convo_layer(3, 3, kernel_width, x, False)
+        h[0] = convo_layer(3, 3, kernel_width, x, 0, False)
     m = mask_layer(h[num_layers-1], b_mask)
     y = tf.reshape(m, [-1, 3])
     y_ = tf.placeholder(tf.int64, [None])
@@ -210,10 +207,11 @@ def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
     saver = tf.train.Saver()
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     init = tf.global_variables_initializer()
-    return train_step, accuracy, saver, init, x, y, y_, cross_entropy, h[0]
+    
+    return train_step, accuracy, saver, init, x, y, y_, cross_entropy
 
 
-def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, hidden,
+def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
               valid_inputs, valid_correct, result_dir):
     print("Training network")
     start = time.time()
@@ -224,23 +222,21 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, hidden
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
-            for i in range(1, 5 + 1):
+            for i in range(1, 500 + 1):
                 batch = random.sample(train_stamps, BATCH_SIZE)
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
                 train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 1 == 0:
+                if i % 50 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
                     train_accuracy = accuracy.eval(feed_dict={
                             x: inputs, y_: correct})
                     valid_accuracy = accuracy.eval(feed_dict={
                             x: valid_inputs, y_: valid_correct})
-                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                 
-        stop = time.time()
-        
-        example = np.array(misc.imread('data/simplemask/simplemask20160414163400.png'))
-        getActivations(hidden,example)
-        
+                    valid_accuracy = 0
+                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                             
+            
+        stop = time.time()  
         F = open(out_dir + 'parameters.txt',"a")
         F.write("Elapsed time:\t" + str(stop - start) + " seconds\n")
         F.close()
@@ -252,9 +248,8 @@ if __name__ == '__main__':
     kernel_width = int(sys.argv[3])
     layer_sizes = sys.argv[4::]
     layer_sizes_print = '_'.join(layer_sizes)
-    out_dir = 'results/exp' + job_number + '/'
+    out_dir = 'results/exp' + job_number + str(time.time()) + '/'
     os.makedirs(out_dir)
     save_params(job_number, learning_rate, kernel_width, layer_sizes, out_dir)
     layer_sizes = list(map(int, layer_sizes))
     train_net(*build_net(learning_rate, kernel_width, layer_sizes), *load_validation_batch(), out_dir)
- 

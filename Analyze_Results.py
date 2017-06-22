@@ -70,16 +70,6 @@ def get_mask(time_stamp):
 def find_num_disagreeing_pixels(results, mask):
     return np.sum((results != mask).any(axis=2)) / (480*480)
 
-#def find_worst_results(num_worst, time_stamps, directory, step_version):
-#    time_stamps = get_valid_stamps()
-#    results = load_stamps(*build_net(), directory, step_version, time_stamps)
-#    masks = get_masks(time_stamps)
-#    num_inconsistent = np.zeros(len(time_stamps))
-#    for i in range(len(time_stamps)):
-#        num_inconsistent[i] = find_num_disagreeing_pixels(results[i], masks[i])
-#    indices = num_inconsistent.argsort()[num_worst*-1:][::-1]
-#    print (np.take(num_inconsistent, indices))
-#    return np.take(time_stamps, indices)
 
 def load_stamps(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_dir, num, stamps):
     with tf.Session() as sess:
@@ -108,7 +98,7 @@ def find_worst_results(num_worst, time_stamps, directory, step_version, kernel, 
 def display_sky_images(time_stamps):
     for s in time_stamps:
         Image.fromarray(np.array(misc.imread('data/simpleimage/simpleimage' + str(s) + '.jpg'))).show()
-        
+
 
 if __name__ == '__main__':
     
