@@ -66,7 +66,7 @@ def get_recent_step_version(directory):
     line = file[len(file)-1]
     return int((line.split()[0]))
 
-def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_dir, num_iterations, kernel_width, layer_size):
+def load_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, result_dir, num_iterations, kernel_width, layer_size):
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(num_iterations))
         with tf.variable_scope('hidden0'):

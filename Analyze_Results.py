@@ -10,7 +10,7 @@ Created on Thu Jun 15 15:32:13 2017
 @author: jeffmullins
 """
 
-from net import build_net, get_inputs
+from net import build_net, get_inputs, format_nsmask, get_nsmasks
 from load_net import out_to_image
 import numpy as np
 import sys
@@ -71,22 +71,24 @@ def find_num_disagreeing_pixels(results, mask):
     return np.sum((results != mask).any(axis=2)) / (480*480)
 
 
-def load_stamps(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_dir, num, stamps):
+def load_stamps(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, result_dir, num, stamps):
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(num))
         inputs = get_inputs(stamps)
-        outputs = out_to_image(y.eval(feed_dict={x: inputs}))
+        ns_vals = get_nsmasks(stamps)
+        outputs = out_to_image(y.eval(feed_dict={x: inputs, ns: ns_vals}))
         return outputs.reshape(-1, 480, 480, 3)
 
 def find_worst_results(num_worst, time_stamps, directory, step_version, kernel, layers):
-    train_step, accuracy, saver, init, x, y, y_, cross_entropy = build_net(kernel_width = kernel, layer_sizes = layers)
+    train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy = build_net(kernel_width = kernel, layer_sizes = layers)
     with tf.Session() as sess:
         saver.restore(sess, directory + 'weights-' + str(step_version))
         time_stamps = get_valid_stamps()
         num_inconsistent = np.zeros(len(time_stamps))
         for i, s in enumerate(time_stamps):
             inputs = get_inputs([s])
-            result = out_to_image(y.eval(feed_dict={x: inputs}))
+            ns_vals = get_nsmasks([s])
+            result = out_to_image(y.eval(feed_dict={x: inputs, ns: ns_vals}))
             result = result.reshape(480, 480, 3)
             mask = get_mask(s)
             num_inconsistent[i] = find_num_disagreeing_pixels(result, mask)

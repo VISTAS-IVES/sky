@@ -45,6 +45,7 @@ def create_dirs():
     os.mkdir('cldmask')
     os.mkdir('simpleimage')
     os.mkdir('simplemask')
+    os.mkdir('nsmask')
 
 
 def unpack_tar(file, dir):
@@ -130,7 +131,7 @@ def simplify_colors(img):
     WHITE. Destructively modifies img."""
     img[(img == GREEN).all(axis=2)] = BLACK
     img[(img == YELLOW).all(axis=2)] = BLACK
-    img[(img == GRAY).all(axis=2)] = WHITE
+    #img[(img == GRAY).all(axis=2)] = WHITE
     return img
 
 
@@ -183,7 +184,7 @@ def test_remove():
     return img
 
 
-def black_mask_to_image(mask):
+def ns_mask_to_image(mask):
     """Takes a mask of booleans and returns an image where each pixel is
     BLACK if in the mask, BLUE otherwise."""
     img = np.full((480, 480, 3), BLUE)
@@ -191,25 +192,21 @@ def black_mask_to_image(mask):
     return img
 
 
-def update_black_mask(img, black_mask):
-    """Modified black_mask by removing any pixels that are WHITE, BLUE, or
-    GRAY in img."""
-    black_mask[(img == WHITE).all(axis=2)] = False
-    black_mask[(img == BLUE).all(axis=2)] = False
-    black_mask[(img == GRAY).all(axis=2)] = False
+def create_non_sky_mask(mask):
+    """Given a mask, creates a saves an image that is BLACK
+    for every place that is not sky and BLUE for every place that is sky"""
+    ns_mask = np.full((480, 480, 3), BLUE)
+    ns_mask[(mask == BLACK).all(axis=2)] = BLACK
+    return ns_mask
 
-
-def find_black_mask():
+def save_non_sky_masks():
     """Creates a mask of pixels which are black or green in every cldmask and
     saves it to always_black_mask.png."""
-    black_mask = np.ones((480, 480), dtype=bool)
-    for file in os.listdir('cldmask/'):
-        img = misc.imread('cldmask/' + file)
-        img = crop_image(img)
-        update_black_mask(img, black_mask)
-    black_mask = black_mask_to_image(black_mask).astype('uint8')
-    Image.fromarray(black_mask).save('always_black_mask.png')
-
+    for file in os.listdir('simplemask/'):
+        mask = misc.imread('simplemask/' + file)
+        ns_mask = create_non_sky_mask(mask)
+        ns_mask = ns_mask.astype('uint8')
+        Image.fromarray(ns_mask).save('nsmask/nsmask' + extract_timestamp(file) + '.png')
 
 def simplify_masks():
     """Writes similified versions of all images in in_dir to out_dir.
@@ -225,7 +222,6 @@ def simplify_masks():
             print('Removing white sun')
             img = remove_white_sun(img)
         simplified = simplify_colors(img)
-        simplified = img
         counts = counts + color_counts(simplified)
         Image.fromarray(simplified).save('simplemask/simplemask' + extract_timestamp(file) + '.png')
     return (counts / counts.sum())
@@ -264,10 +260,10 @@ if __name__ == '__main__':
     remove_images_without_matching_masks()
     print('Simplifying images')
     print(str(simplify_images()) + ' images processed')
-    print('Finding black mask')
-    find_black_mask()
     print('Simplifying masks')
     print('[Blue, White, Black] = ' + str(simplify_masks()))
+    print('saving nsmasks')
+    save_non_sky_masks()
     print('Separating data')
     test, valid, train = separate_data()
     print(str(len(test)) + ' test cases; ' +

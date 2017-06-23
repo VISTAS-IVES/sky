@@ -29,8 +29,10 @@ from PIL import Image
 BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
+GRAY = np.array([192, 192, 192])
+
 # Distances from center of an image
-BATCH_SIZE = 50
+BATCH_SIZE = 10
 
 def check_for_commit():
     label = subprocess.check_output(["git", "status", "--untracked-files=no", "--porcelain"])
@@ -54,27 +56,14 @@ def scale(img):
     return img
 
 
-def make_b_mask_boolean(img):
-    """Takes a black/non-black image and return a corresponding True/False mask."""
-    black_mask = np.zeros((480, 480), dtype=bool)
-    black_mask[(img == BLACK).all(axis=2)] = True
-    return black_mask
-
-
-def give_b_mask_black_values(bool_mask):
-    """Takes a boolean mask and returns a 3-channel image with [0, 0, 1e7]
-    where the mask is True, [0, 0, 0] elsewhere."""
-    black_mask = np.zeros((480, 480, 3), dtype=np.float32)
-    black_mask[bool_mask] = [0.0, 0.0, 10000000.0]
-    return black_mask
-
-
 def mask_to_one_hot(img):
     """Modifies (and returns) img to have a one-hot vector for each
     pixel."""
-    img[(img == WHITE).all(axis=2)] = np.array([1, 0, 0])
-    img[(img == BLUE).all(axis=2)] = np.array([0, 1, 0])
-    img[(img == BLACK).all(axis=2)] = np.array([0, 0, 1])
+    img[(img == WHITE).all(axis=2)] = np.array([1, 0, 0, 0])
+    img[(img == BLUE).all(axis=2)] =  np.array([0, 1, 0, 0])
+    img[(img == GRAY).all(axis=2)] =  np.array([0, 0, 1, 0])
+    img[(img == BLACK).all(axis=2)] = np.array([0, 0, 0, 1])
+    
     return img
 
 
@@ -84,7 +73,8 @@ def mask_to_index(img):
     result = np.ndarray(shape=[img.shape[0], img.shape[1]])
     result[(img == WHITE).all(axis=2)] = 0
     result[(img == BLUE).all(axis=2)] = 1
-    result[(img == BLACK).all(axis=2)] = 2
+    result[(img == GRAY).all(axis=2)] = 2
+    result[(img == BLACK).all(axis=2)] = 3
     return result
 
 
@@ -107,6 +97,18 @@ def get_masks(stamps):
         masks[i] = mask_to_index(np.array(misc.imread('data/simplemask/simplemask' + str(s) + '.png')))
     return masks.reshape((-1))
 
+def format_nsmask(img):
+    """Takes a boolean mask and returns a 1-channel image with [0, 0, 1e7]
+    where the mask is True, [0, 0, 0] elsewhere."""
+    ns_mask = np.full((480, 480, 1), -1000000.0, dtype=np.float32)
+    ns_mask[(img == BLACK).all(axis=2)] = [10000000.0]
+    return ns_mask
+
+def get_nsmasks(stamps):
+    masks = np.empty((len(stamps), 480, 480, 1))
+    for i, s in enumerate(stamps):
+        masks[i] = format_nsmask((np.array(misc.imread('data/nsmask/nsmask' + str(s) + '.png'))))
+    return masks
 
 def weight_variable(shape, n_inputs, num):
     initial = tf.truncated_normal(shape, stddev=(2 / math.sqrt(n_inputs)))
@@ -177,16 +179,14 @@ def convo_layer(num_in, num_out, width, prev, num, relu=True):
 
       
 
-def mask_layer(last_layer, b_mask):
-    btf_mask = tf.constant(b_mask)
-    return tf.add(btf_mask, last_layer)
-
+def mask_layer(last_layer, ns_vals):
+    #ns_vals = tf.constant(ns_vals)
+    return tf.concat([last_layer, ns_vals], 3)
 
 def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
     print("Building network")
-    bool_mask = make_b_mask_boolean(misc.imread('data/always_black_mask.png'))
-    b_mask = give_b_mask_black_values(bool_mask)
     tf.reset_default_graph()
+    ns = tf.placeholder(dtype = tf.float32, shape = (None, 480, 480 ,1))
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
     num_layers = len(layer_sizes)+1
     h = [None] * (num_layers)
@@ -197,8 +197,8 @@ def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
         h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, kernel_width, h[num_layers-2], num_layers-1, False)
     else:
         h[0] = convo_layer(3, 3, kernel_width, x, 0, False)
-    m = mask_layer(h[num_layers-1], b_mask)
-    y = tf.reshape(m, [-1, 3])
+    m = mask_layer(h[num_layers-1], ns)
+    y = tf.reshape(m, [-1, 4])
     y_ = tf.placeholder(tf.int64, [None])
     cross_entropy = tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))
@@ -208,10 +208,10 @@ def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     init = tf.global_variables_initializer()
     
-    return train_step, accuracy, saver, init, x, y, y_, cross_entropy
+    return train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy
 
 
-def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
+def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
               valid_inputs, valid_correct, result_dir):
     print("Training network")
     start = time.time()
@@ -222,18 +222,19 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
-            for i in range(1, 5000 + 1):
+            for i in range(1, 50 + 1):
                 batch = random.sample(train_stamps, BATCH_SIZE)
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
-                train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 50 == 0:
+                ns_vals = get_nsmasks(batch)
+                
+                train_step.run(feed_dict={x: inputs, y_: correct, ns: ns_vals})
+                if i % 10 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
                     train_accuracy = accuracy.eval(feed_dict={
-                            x: inputs, y_: correct})
+                            x: inputs, y_: correct, ns: ns_vals})
                     valid_accuracy = accuracy.eval(feed_dict={
-                            x: valid_inputs, y_: valid_correct})
-                    valid_accuracy = 0
+                            x: valid_inputs, y_: valid_correct, ns: ns_vals})
                     print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                             
             
         stop = time.time()  
