@@ -233,7 +233,6 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
                             x: inputs, y_: correct})
                     valid_accuracy = accuracy.eval(feed_dict={
                             x: valid_inputs, y_: valid_correct})
-                    valid_accuracy = 0
                     print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                             
             
         stop = time.time()  
