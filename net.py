@@ -235,6 +235,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
                             x: inputs, y_: correct, ns: ns_vals})
                     valid_accuracy = accuracy.eval(feed_dict={
                             x: valid_inputs, y_: valid_correct, ns: ns_vals})
+
                     print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                             
             
         stop = time.time()  
@@ -249,7 +250,7 @@ if __name__ == '__main__':
     kernel_width = int(sys.argv[3])
     layer_sizes = sys.argv[4::]
     layer_sizes_print = '_'.join(layer_sizes)
-    out_dir = 'results/exp' + job_number + str(time.time()) + '/'
+    out_dir = 'results/exp' + job_number + '/'
     os.makedirs(out_dir)
     save_params(job_number, learning_rate, kernel_width, layer_sizes, out_dir)
     layer_sizes = list(map(int, layer_sizes))
