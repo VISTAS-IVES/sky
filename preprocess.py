@@ -32,12 +32,12 @@ import random
 import pickle
 import time
 
-BLACK = np.array([0, 0, 0])
-BLUE = np.array([0, 0, 255])
-GREEN = np.array([0, 255, 0])
-GRAY = np.array([192, 192, 192])
-YELLOW = np.array([255, 255, 0])
 WHITE = np.array([255, 255, 255])
+BLUE = np.array([0, 0, 255])
+GRAY = np.array([192, 192, 192])
+BLACK = np.array([0, 0, 0])
+GREEN = np.array([0, 255, 0])
+YELLOW = np.array([255, 255, 0])
 
 
 def create_dirs():
@@ -118,20 +118,18 @@ def simplify_images():
 
 
 def color_counts(img):
-    """Returns an array of the number of BLUE, WHITE, and BLACK pixels
+    """Returns an array of the number of BLUE, WHITE, and GRAY pixels
     in img."""
     blue = (img == BLUE).all(axis=2).sum()
     white = (img == WHITE).all(axis=2).sum()
-    black = (img == BLACK).all(axis=2).sum()
-    return np.array([blue, white, black])
+    gray = (img == GRAY).all(axis=2).sum()
+    return np.array([blue, white, gray])
 
 
 def simplify_colors(img):
-    """Returns an image with GREEN and YELLOW pixels made black, GRAY pixels
-    WHITE. Destructively modifies img."""
+    """Returns an image with GREEN and YELLOW pixels made black. Destructively modifies img."""
     img[(img == GREEN).all(axis=2)] = BLACK
     img[(img == YELLOW).all(axis=2)] = BLACK
-    #img[(img == GRAY).all(axis=2)] = WHITE
     return img
 
 
@@ -210,7 +208,7 @@ def save_non_sky_masks():
 
 def simplify_masks():
     """Writes similified versions of all images in in_dir to out_dir.
-    Returns an array of relative frequencies of BLUE, WHITE, and BLACK."""
+    Returns an array of relative frequencies of WHITE, BLUE, and GRAY."""
     counts = np.zeros(3, dtype=np.int)
     for file in os.listdir('cldmask/'):
         img = misc.imread('cldmask/' + file)
@@ -250,24 +248,24 @@ def separate_data():
 if __name__ == '__main__':
     before = os.getcwd()
     os.chdir('data')
-    print('Creating directories')
-    create_dirs()
-    print('Unpacking tars')
-    unpack_all_tars()
-    print('Simplifying names')
-    simplify_all_names()
-    print('Removing images without masks')
-    remove_images_without_matching_masks()
-    print('Simplifying images')
-    print(str(simplify_images()) + ' images processed')
+#    print('Creating directories')
+#    create_dirs()
+#    print('Unpacking tars')
+#    unpack_all_tars()
+#    print('Simplifying names')
+#    simplify_all_names()
+#    print('Removing images without masks')
+#    remove_images_without_matching_masks()
+#    print('Simplifying images')
+#    print(str(simplify_images()) + ' images processed')
     print('Simplifying masks')
-    print('[Blue, White, Black] = ' + str(simplify_masks()))
-    print('saving nsmasks')
+    print('[White, Blue, Gray] = ' + str(simplify_masks()))
+    print('Saving non-sky masks')
     save_non_sky_masks()
-    print('Separating data')
-    test, valid, train = separate_data()
-    print(str(len(test)) + ' test cases; ' +
-          str(len(valid)) + ' validation cases; ' +
-          str(len(train)) + ' training cases.')
+#    print('Separating data')
+#    test, valid, train = separate_data()
+#    print(str(len(test)) + ' test cases; ' +
+#          str(len(valid)) + ' validation cases; ' +
+#          str(len(train)) + ' training cases.')
     os.chdir(before)
     print('Done')
