@@ -132,8 +132,8 @@ def load_validation_batch():
     valid_stamps = valid_stamps[:BATCH_SIZE]
     valid_inputs = get_inputs(valid_stamps)
     valid_correct = get_masks(valid_stamps)
-    valid_ns_vals = get_nsmaks(valid_stamps)
-    return valid_inputs, valid_correct
+    valid_ns_vals = get_nsmasks(valid_stamps)
+    return valid_inputs, valid_correct, valid_ns_vals
 
 
 def max_out(inputs, num_units, axis=None):
