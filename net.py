@@ -132,6 +132,7 @@ def load_validation_batch():
     valid_stamps = valid_stamps[:BATCH_SIZE]
     valid_inputs = get_inputs(valid_stamps)
     valid_correct = get_masks(valid_stamps)
+    valid_ns_vals = get_nsmaks(valid_stamps)
     return valid_inputs, valid_correct
 
 
@@ -212,7 +213,7 @@ def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
 
 
 def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
-              valid_inputs, valid_correct, result_dir):
+              valid_inputs, valid_correct, valid_ns_vals, result_dir):
     print("Training network")
     start = time.time()
     # Get image and make the mask into a one-hotted mask
@@ -233,7 +234,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
                     train_accuracy = accuracy.eval(feed_dict={
                             x: inputs, y_: correct, ns: ns_vals})
                     valid_accuracy = accuracy.eval(feed_dict={
-                            x: valid_inputs, y_: valid_correct, ns: ns_vals})
+                            x: valid_inputs, y_: valid_correct, ns: valid_ns_vals})
 
                     print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                             
             
