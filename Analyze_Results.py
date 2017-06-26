@@ -21,8 +21,17 @@ from scipy import misc
 import os
 import pickle
 
+BLUE = np.array([0, 0, 255])
+WHITE = np.array([255, 255, 255])
+GRAY = np.array([192, 192, 192])
 
-
+#in format: "what we picked"_TO_"the correct answer"
+BLUE_TO_GRAY = [85, 0 , 0]
+BLUE_TO_WHITE = [170, 0, 0]
+GRAY_TO_BLUE = [0, 85, 0]
+GRAY_TO_WHITE = [255, 0, 0]
+WHITE_TO_BLUE = [0, 170, 0]
+WHITE_TO_GRAY = [0, 255, 0]
 #def make_compared_image(result, mask):
 #    mask[(result != mask).any(axis=2)] = [255, 0 , 0]
 #    mask = Image.fromarray(mask.astype('uint8'))
@@ -44,12 +53,26 @@ def get_recent_step_version(directory):
     line = file[len(file)-1]
     return (line.split()[0])
 
+
 def make_compared_images(results, masks):
     for i in range(len(results)):
-        masks[i][(results[i] != masks[i]).any(axis=2)] = [255, 0 , 0]
+        masks[i][np.logical_and((results[i] == BLUE).all(axis=2), (masks[i] == GRAY).all(axis=2))] = BLUE_TO_GRAY
+        masks[i][np.logical_and((results[i] == BLUE).all(axis=2), (masks[i] == WHITE).all(axis=2))] = BLUE_TO_WHITE
+        masks[i][np.logical_and((results[i] == GRAY).all(axis=2), (masks[i] == BLUE).all(axis=2))] = GRAY_TO_BLUE
+        masks[i][np.logical_and((results[i] == GRAY).all(axis=2), (masks[i] == WHITE).all(axis=2))] = GRAY_TO_WHITE
+        masks[i][np.logical_and((results[i] == WHITE).all(axis=2), (masks[i] == BLUE).all(axis=2))] = WHITE_TO_BLUE
+        masks[i][np.logical_and((results[i] == WHITE).all(axis=2), (masks[i] == GRAY).all(axis=2))] = WHITE_TO_GRAY
         disp = Image.fromarray(masks[i].astype('uint8'))
         disp.show()
     return masks
+
+
+#def make_compared_images(results, masks):
+#    for i in range(len(results)):
+#        masks[i][(results[i] != masks[i]).any(axis=2)] = [255, 0 , 0]
+#        disp = Image.fromarray(masks[i].astype('uint8'))
+#        disp.show()
+#    return masks
 
 def get_valid_stamps():
     with open('data/valid.stamps', 'rb') as f:

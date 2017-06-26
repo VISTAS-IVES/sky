@@ -32,7 +32,7 @@ WHITE = np.array([255, 255, 255])
 GRAY = np.array([192, 192, 192])
 
 # Distances from center of an image
-BATCH_SIZE = 10
+BATCH_SIZE = 50
 
 def check_for_commit():
     label = subprocess.check_output(["git", "status", "--untracked-files=no", "--porcelain"])
