@@ -132,7 +132,8 @@ def load_validation_batch():
     valid_stamps = valid_stamps[:BATCH_SIZE]
     valid_inputs = get_inputs(valid_stamps)
     valid_correct = get_masks(valid_stamps)
-    return valid_inputs, valid_correct
+    valid_ns_vals = get_nsmasks(valid_stamps)
+    return valid_inputs, valid_correct, valid_ns_vals
 
 
 def max_out(inputs, num_units, axis=None):
@@ -212,7 +213,7 @@ def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
 
 
 def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
-              valid_inputs, valid_correct, result_dir):
+              valid_inputs, valid_correct, valid_ns_vals, result_dir):
     print("Training network")
     start = time.time()
     # Get image and make the mask into a one-hotted mask
@@ -222,19 +223,18 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
-            for i in range(1, 50 + 1):
+            for i in range(1, 1000 + 1):
                 batch = random.sample(train_stamps, BATCH_SIZE)
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
                 ns_vals = get_nsmasks(batch)
-                
                 train_step.run(feed_dict={x: inputs, y_: correct, ns: ns_vals})
-                if i % 10 == 0:
+                if i % 50 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
                     train_accuracy = accuracy.eval(feed_dict={
                             x: inputs, y_: correct, ns: ns_vals})
                     valid_accuracy = accuracy.eval(feed_dict={
-                            x: valid_inputs, y_: valid_correct, ns: ns_vals})
+                            x: valid_inputs, y_: valid_correct, ns: valid_ns_vals})
 
                     print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                             
             
