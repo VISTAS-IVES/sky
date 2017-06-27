@@ -11,11 +11,41 @@ Created on Fri Jun  2 14:58:47 2017
 @author: drake
 """
 
-from train import build_net, get_inputs, format_nsmask, get_nsmasks, WHITE, BLUE, BLACK, GRAY
+from train import build_net, get_inputs, get_masks, format_nsmask, get_nsmasks, BLACK
 import numpy as np
 import sys
 import tensorflow as tf
 from PIL import Image
+from scipy import misc
+
+TIME_STAMP = 20160414162830
+
+BLUE = np.array([0, 0, 255])
+WHITE = np.array([255, 255, 255])
+GRAY = np.array([192, 192, 192])
+
+# BLUE_FOR_GRAY (for example) means our net gave blue when the target mask
+# gave gray
+BLUE_FOR_GRAY = [85, 0, 0]  # Very dark red
+BLUE_FOR_WHITE = [170, 0, 0]  # Dark red
+GRAY_FOR_WHITE = [255, 0, 0]  # Bright red
+GRAY_FOR_BLUE = [0, 85, 0]  # Dark green
+WHITE_FOR_BLUE = [0, 170, 0]  # Medium green
+WHITE_FOR_GRAY = [0, 255, 0]  # Bright green
+
+
+def show_comparison_images(outputs, targets):
+    """Shows images of where outputs differ targets, color-coded by how they
+    agree or disagree. Destructively modifies targets."""
+    targets[np.logical_and((outputs == BLUE).all(axis=2), (targets == GRAY).all(axis=2))] = BLUE_FOR_GRAY
+    targets[np.logical_and((outputs == BLUE).all(axis=2), (targets == WHITE).all(axis=2))] = BLUE_FOR_WHITE
+    targets[np.logical_and((outputs == GRAY).all(axis=2), (targets == BLUE).all(axis=2))] = GRAY_FOR_BLUE
+    targets[np.logical_and((outputs == GRAY).all(axis=2), (targets == WHITE).all(axis=2))] = GRAY_FOR_WHITE
+    targets[np.logical_and((outputs == WHITE).all(axis=2), (targets == BLUE).all(axis=2))] = WHITE_FOR_BLUE
+    targets[np.logical_and((outputs == WHITE).all(axis=2), (targets == GRAY).all(axis=2))] = WHITE_FOR_GRAY
+    disp = Image.fromarray(targets.astype('uint8'))
+    disp.show()
+
 
 
 def read_parameters(directory):
@@ -59,17 +89,24 @@ def out_to_image(output):
 def load_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, result_dir, num_iterations):
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(num_iterations))
-        inputs = get_inputs([20160414162830])
-        ns_vals = get_nsmasks([20160414162830])
+        inputs = get_inputs([TIME_STAMP])
+        ns_vals = get_nsmasks([TIME_STAMP])
         img = out_to_image(y.eval(feed_dict={x: inputs, ns:ns_vals}))[0]
+        if (len(sys.argv) > 2) :
+            if(sys.argv[2] == 'True'):
+                mask = np.array(misc.imread('data/simplemask/simplemask' + str(TIME_STAMP) + '.png'))
+                Image.fromarray(inputs[0].astype('uint8')).show()
+                Image.fromarray(mask.astype('uint8')).show()
+                show_comparison_images(img, mask)
         img = Image.fromarray(img.astype('uint8'))
         img.show()
         img.save(result_dir + 'net-output.png')
 
 if __name__ == '__main__':
-    dir_name = "results/" + sys.argv[1] + "/"
+    dir_name = "results/" + sys.argv[1] + "/"        
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)
     kernel_width = int(args['Kernel width'])
     layer_sizes = list(map(int, args['Layer sizes'].split()))
     load_net(*build_net(0, kernel_width, layer_sizes), dir_name, step_version)
+
