@@ -9,7 +9,10 @@ Created on Fri Jun  9 09:30:05 2017
 import matplotlib.pyplot as plt
 import sys
 
-with open(sys.argv[1]) as f:
+
+file = dir_name = "results/" + sys.argv[1] + "/output.txt"
+
+with open(file) as f:
     data = f.readlines()
 
 data = data[1:]  # Strip off first and last line
