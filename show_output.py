@@ -11,25 +11,32 @@ Created on Fri Jun  2 14:58:47 2017
 @author: drake
 """
 
-from net import build_net, get_inputs, format_nsmask, get_nsmasks, WHITE, BLUE, BLACK, GRAY
+from train import build_net, get_inputs, format_nsmask, get_nsmasks, WHITE, BLUE, BLACK, GRAY
 import numpy as np
 import sys
 import tensorflow as tf
 from PIL import Image
 
-def read_in(directory):
-    F = open(directory + 'parameters.txt',"r")
+
+def read_parameters(directory):
+    """Reads the parameters.txt file in directory. Returns a dictionary
+    associating labels with keys."""
+    F = open(directory + 'parameters.txt', 'r')
     file = F.readlines()
-    args = []
+    args = {}
     for line in file:
-        args.append(line[line.index("\t")+len("\t"):line.index("\n")])
+        key, value = line.split(':\t')
+        args[key] = value
     return args
 
-def get_recent_step_version(directory):
-    F = open(directory + 'output.txt',"r")
+
+def read_last_iteration_number(directory):
+    """Reads the output.txt file in directory. Returns the iteration number
+    on the last row."""
+    F = open(directory + 'output.txt', 'r')
     file = F.readlines()
-    line = file[len(file)-1]
-    return int((line.split()[0]))
+    line = file[len(file) - 1]
+    return (line.split()[0])
 
 def one_hot_to_mask(max_indices, output):
     """Modifies (and returns) img to have sensible colors in place of
@@ -61,8 +68,8 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, res
 
 if __name__ == '__main__':
     dir_name = "results/" + sys.argv[1] + "/"
-    args = read_in(dir_name)
-    step_version = get_recent_step_version(dir_name)
-    kernel_width = int(args[2])
-    layer_sizes = list(map(int,args[3].split()))
+    args = read_parameters(dir_name)
+    step_version = read_last_iteration_number(dir_name)
+    kernel_width = int(args['Kernel width'])
+    layer_sizes = list(map(int, args['Layer sizes'].split()))
     load_net(*build_net(0, kernel_width, layer_sizes), dir_name, step_version)

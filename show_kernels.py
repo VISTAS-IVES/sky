@@ -5,18 +5,14 @@ Created on Tue Jun 20 11:03:58 2017
 
 @author: jeffmullins
 """
-from net import build_net, get_inputs
+from train import build_net
+from show_output import read_parameters, read_last_iteration_number
 import numpy as np
-import matplotlib as mp
-import matplotlib.pyplot as plt
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
-from tensorflow.examples.tutorials.mnist import input_data
 import math
 import sys
 from PIL import Image
 
-GRAY = np.array([127,127,127])
 
 def put_kernels_on_grid (kernel, kernel_size, layer_size):
     kernel = np.array(kernel)
@@ -44,28 +40,6 @@ def put_kernels_on_grid (kernel, kernel_size, layer_size):
     img.show()
 
 
-def print_kernels(num, result_dir):
-    with tf.variable_scope('hidden' + str(num)):
-      tf.get_variable_scope().reuse_variables()
-      weights = tf.get_variable('weights')
-      put_kernels_on_grid (weights, result_dir)
-      #tf.image.summary('conv1/kernels', grid, max_outputs=1)
-
-
-def read_in(directory):
-    F = open(directory + 'parameters.txt',"r")
-    file = F.readlines()
-    args = []
-    for line in file:
-        args.append(line[line.index("\t")+len("\t"):line.index("\n")])
-    return args
-
-def get_recent_step_version(directory):
-    F = open(directory + 'output.txt',"r")
-    file = F.readlines()
-    line = file[len(file)-1]
-    return int((line.split()[0]))
-
 def load_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, result_dir, num_iterations, kernel_width, layer_size):
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(num_iterations))
@@ -78,10 +52,10 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, res
 if __name__ == '__main__':
     dir_name = sys.argv[1]
     dir_name = "results/" + dir_name + "/"
-    args = read_in(dir_name)
-    step_version = get_recent_step_version(dir_name)
-    kernel_width = int(args[2])
-    layer_sizes = list(map(int,args[3].split()))
+    args = read_parameters(dir_name)
+    step_version = read_last_iteration_number(dir_name)
+    kernel_width = int(args['Kernel width'])
+    layer_sizes = list(map(int, args['Layer sizes'].split()))
     
     load_net(*build_net(0, kernel_width, layer_sizes), dir_name, step_version, kernel_width, layer_sizes[0])
 #    with tf.Session() as sess:

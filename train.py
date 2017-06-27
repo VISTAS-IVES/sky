@@ -32,7 +32,8 @@ WHITE = np.array([255, 255, 255])
 GRAY = np.array([192, 192, 192])
 
 # Distances from center of an image
-BATCH_SIZE = 50
+BATCH_SIZE = 10
+LEARNING_RATE = 0.0001
 
 def check_for_commit():
     label = subprocess.check_output(["git", "status", "--untracked-files=no", "--porcelain"])
@@ -223,13 +224,13 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
         with tf.Session() as sess:
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
-            for i in range(1, 1000 + 1):
+            for i in range(1, 10 + 1):
                 batch = random.sample(train_stamps, BATCH_SIZE)
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
                 ns_vals = get_nsmasks(batch)
                 train_step.run(feed_dict={x: inputs, y_: correct, ns: ns_vals})
-                if i % 50 == 0:
+                if i % 1 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
                     train_accuracy = accuracy.eval(feed_dict={
                             x: inputs, y_: correct, ns: ns_vals})
@@ -244,14 +245,13 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
         F.close()
 
 if __name__ == '__main__':
-    check_for_commit()
+    #check_for_commit()
     job_number = sys.argv[1]
-    learning_rate = float(sys.argv[2])
-    kernel_width = int(sys.argv[3])
-    layer_sizes = sys.argv[4::]
+    kernel_width = int(sys.argv[2])
+    layer_sizes = sys.argv[3::]
     layer_sizes_print = '_'.join(layer_sizes)
     out_dir = 'results/exp' + job_number + '/'
     os.makedirs(out_dir)
-    save_params(job_number, learning_rate, kernel_width, layer_sizes, out_dir)
+    save_params(job_number, LEARNING_RATE, kernel_width, layer_sizes, out_dir)
     layer_sizes = list(map(int, layer_sizes))
-    train_net(*build_net(learning_rate, kernel_width, layer_sizes), *load_validation_batch(), out_dir)
+    train_net(*build_net(LEARNING_RATE, kernel_width, layer_sizes), *load_validation_batch(), out_dir)

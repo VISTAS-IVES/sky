@@ -10,15 +10,15 @@ Created on Thu Jun 15 15:32:13 2017
 @author: jeffmullins
 """
 
-from net import build_net, get_inputs, get_nsmasks
-from load_net import out_to_image
+from train import build_net, get_inputs, get_nsmasks, BATCH_SIZE
+from show_output import out_to_image, read_parameters, read_last_iteration_number
 import numpy as np
 import sys
 import tensorflow as tf
 from PIL import Image
 from scipy import misc
 import pickle
-from net import BATCH_SIZE
+
 
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
@@ -34,25 +34,25 @@ WHITE_FOR_BLUE = [0, 170, 0]  # Medium green
 WHITE_FOR_GRAY = [0, 255, 0]  # Bright green
 
 
-def read_parameters(directory):
-    """Reads the parameters.txt file in directory. Returns a dictionary
-    associating labels with keys."""
-    F = open(directory + 'parameters.txt', 'r')
-    file = F.readlines()
-    args = {}
-    for line in file:
-        key, value = line.split(':\t')
-        args[key] = value
-    return args
-
-
-def read_last_iteration_number(directory):
-    """Reads the output.txt file in directory. Returns the iteration number
-    on the last row."""
-    F = open(directory + 'output.txt', 'r')
-    file = F.readlines()
-    line = file[len(file) - 1]
-    return (line.split()[0])
+#def read_parameters(directory):
+#    """Reads the parameters.txt file in directory. Returns a dictionary
+#    associating labels with keys."""
+#    F = open(directory + 'parameters.txt', 'r')
+#    file = F.readlines()
+#    args = {}
+#    for line in file:
+#        key, value = line.split(':\t')
+#        args[key] = value
+#    return args
+#
+#
+#def read_last_iteration_number(directory):
+#    """Reads the output.txt file in directory. Returns the iteration number
+#    on the last row."""
+#    F = open(directory + 'output.txt', 'r')
+#    file = F.readlines()
+#    line = file[len(file) - 1]
+#    return (line.split()[0])
 
 
 def show_comparison_images(outputs, targets):
