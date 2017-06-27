@@ -18,7 +18,7 @@ import tensorflow as tf
 from PIL import Image
 from scipy import misc
 import pickle
-
+import matplotlib.pyplot as plt
 
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
@@ -123,6 +123,11 @@ def find_worst_results(num_worst, time_stamps, directory, step_version, kernel, 
             result = result.reshape(480, 480, 3)
             mask = read_target(s)
             num_inconsistent[i] = disagreement_rate(result, mask)
+            
+        plt.plot(np.take(num_inconsistent*100, np.flip((num_inconsistent.argsort()), axis=0)))
+        plt.ylabel('Percent Incorrect')
+        plt.show()
+            
         indices = num_inconsistent.argsort()[num_worst*-1:][::-1]
         print('Worst results percentages:\t' + str(np.take(num_inconsistent, indices)))
     return np.take(time_stamps, indices)

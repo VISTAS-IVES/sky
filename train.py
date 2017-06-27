@@ -245,7 +245,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
         F.close()
 
 if __name__ == '__main__':
-    #check_for_commit()
+    check_for_commit()
     job_number = sys.argv[1]
     kernel_width = int(sys.argv[2])
     layer_sizes = sys.argv[3::]
