@@ -17,8 +17,10 @@ import sys
 import tensorflow as tf
 from PIL import Image
 from scipy import misc
+import argparse
 
 TIME_STAMP = 20160414162830
+PRINT_ALL = False
 
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
@@ -93,7 +95,7 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, res
         ns_vals = get_nsmasks([TIME_STAMP])
         img = out_to_image(y.eval(feed_dict={x: inputs, ns:ns_vals}))[0]
         if (len(sys.argv) > 2) :
-            if(sys.argv[2] == 'True'):
+            if(PRINT_ALL):
                 mask = np.array(misc.imread('data/simplemask/simplemask' + str(TIME_STAMP) + '.png'))
                 Image.fromarray(inputs[0].astype('uint8')).show()
                 Image.fromarray(mask.astype('uint8')).show()
@@ -103,7 +105,19 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, res
         img.save(result_dir + 'net-output.png')
 
 if __name__ == '__main__':
-    dir_name = "results/" + sys.argv[1] + "/"        
+    parser = argparse.ArgumentParser()
+    parser.add_argument('directory')
+    parser.add_argument('--compare', help='If typed, images used to compare output will be displayed', action='store_true')
+    parser.add_argument('--time_stamp', help='Sets the time stamp to be loaded', type=int)
+    args = parser.parse_args()
+    print 
+    if args.time_stamp:
+        TIME_STAMP = args.time_stamp
+    
+    if args.compare:
+        PRINT_ALL = True
+    
+    dir_name = "results/" + args.directory + "/"        
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)
     kernel_width = int(args['Kernel width'])
