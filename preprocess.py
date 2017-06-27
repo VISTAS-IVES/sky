@@ -95,8 +95,11 @@ def remove_images_without_matching_masks():
     """Deletes image files that do not have matching mask files."""
     for f in os.listdir('skyimage/'):
         g = 'cldmask/cldmask' + extract_timestamp(f) + '.png'
-        if (not os.path.isfile(g)) or (os.path.getsize(g) == 0):
+        if not os.path.isfile(g):
             os.remove('skyimage/' + f)
+        elif os.path.getsize(g) == 0:
+            os.remove('skyimage/' + f)
+            os.remove(g)
 
 
 def crop_image(img):
@@ -254,8 +257,8 @@ if __name__ == '__main__':
 #    unpack_all_tars()
 #    print('Simplifying names')
 #    simplify_all_names()
- #   print('Removing images without masks')
- #   remove_images_without_matching_masks()
+   print('Removing images without masks')
+   remove_images_without_matching_masks()
  #   print('Simplifying images')
  #   print(str(simplify_images()) + ' images processed')
     print('Simplifying masks')
