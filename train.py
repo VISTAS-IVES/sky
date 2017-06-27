@@ -32,7 +32,7 @@ WHITE = np.array([255, 255, 255])
 GRAY = np.array([192, 192, 192])
 
 # Distances from center of an image
-BATCH_SIZE = 10
+BATCH_SIZE = 50
 LEARNING_RATE = 0.0001
 
 def check_for_commit():
