@@ -94,25 +94,27 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, res
         inputs = get_inputs([TIME_STAMP])
         ns_vals = get_nsmasks([TIME_STAMP])
         img = out_to_image(y.eval(feed_dict={x: inputs, ns:ns_vals}))[0]
-        if (len(sys.argv) > 2) :
-            if(PRINT_ALL):
-                mask = np.array(misc.imread('data/simplemask/simplemask' + str(TIME_STAMP) + '.png'))
-                Image.fromarray(inputs[0].astype('uint8')).show()
-                Image.fromarray(mask.astype('uint8')).show()
-                show_comparison_images(img, mask)
+        if(PRINT_ALL):
+            mask = np.array(misc.imread('data/simplemask/simplemask' + str(TIME_STAMP) + '.png'))
+            Image.fromarray(inputs[0].astype('uint8')).show()
+            Image.fromarray(mask.astype('uint8')).show()
+            show_comparison_images(img, mask)
         img = Image.fromarray(img.astype('uint8'))
         img.show()
         img.save(result_dir + 'net-output.png')
+        
+        accuracy = accuracy.eval(feed_dict={x: inputs, y_: get_masks([TIME_STAMP]), ns: ns_vals})
+        print('Accuracy = ' + str(accuracy))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('directory')
     parser.add_argument('--compare', help='If typed, images used to compare output will be displayed', action='store_true')
-    parser.add_argument('--time_stamp', help='Sets the time stamp to be loaded', type=int)
+    parser.add_argument('--time', help='Sets the time stamp to be loaded', type=int)
     args = parser.parse_args()
     print 
-    if args.time_stamp:
-        TIME_STAMP = args.time_stamp
+    if args.time:
+        TIME_STAMP = args.time
     
     if args.compare:
         PRINT_ALL = True
