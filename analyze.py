@@ -125,7 +125,8 @@ def find_worst_results(num_worst, time_stamps, directory, step_version, kernel, 
             num_inconsistent[i] = disagreement_rate(result, mask)
             
         plt.plot(np.take(num_inconsistent*100, np.flip((num_inconsistent.argsort()), axis=0)))
-        plt.ylabel('Percent Incorrect')
+        plt.ylabel('Percent of Pixels Incorrect')
+        plt.xlabel('Image (sorted by accuracy)')
         plt.show()
             
         indices = num_inconsistent.argsort()[num_worst*-1:][::-1]
