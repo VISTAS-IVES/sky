@@ -32,7 +32,7 @@ import random
 import pickle
 import time
 
-WHITE = np.array([255, 255, 255])
+    WHITE = np.array([255, 255, 255])
 BLUE = np.array([0, 0, 255])
 GRAY = np.array([192, 192, 192])
 BLACK = np.array([0, 0, 0])
