@@ -95,10 +95,13 @@ def remove_images_without_matching_masks():
     """Deletes image files that do not have matching mask files."""
     for f in os.listdir('cldmask/'): # Was skyimage
         g = 'cldmask/cldmask' + extract_timestamp(f) + '.png'
+        
+        #
+        h = 'skyimage' + extract_timestamp(f) + '.jpg'
         if not os.path.isfile(g):
-            os.remove('skyimage/' + f)
+            os.remove('skyimage/' + h) # Was f
         elif os.path.getsize(g) == 0:
-            os.remove('skyimage/' + f)
+            os.remove('skyimage/' + h) # Was f
             os.remove(g)
 
 
