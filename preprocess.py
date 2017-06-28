@@ -93,7 +93,7 @@ def extract_timestamp(filename):
 
 def remove_images_without_matching_masks():
     """Deletes image files that do not have matching mask files."""
-    for f in os.listdir('skyimage/'):
+    for f in os.listdir('cldmask/'): # Was skyimage
         g = 'cldmask/cldmask' + extract_timestamp(f) + '.png'
         if not os.path.isfile(g):
             os.remove('skyimage/' + f)
