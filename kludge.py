@@ -11,4 +11,5 @@ from preprocess import extract_timestamp
 
 for file in os.listdir('data/cldmask/'):
     t = extract_timestamp(file)
-    if 
+    if not os.path.isfile('data/simpleimage/simpleimage' + t + '.jpg'):
+        print('There is no simple image for ' + t)
