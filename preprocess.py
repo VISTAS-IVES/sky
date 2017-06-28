@@ -102,7 +102,7 @@ def remove_images_without_matching_masks():
 #            os.remove('skyimage/' + h) # Was f
         #elif os.path.getsize(g) == 0:
         if os.path.getsize(g) == 0:            
-            os.remove('skyimage/' + h) # Was f
+#            os.remove('skyimage/' + h) # Was f
             os.remove(g)
 
 
