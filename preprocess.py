@@ -251,31 +251,24 @@ def separate_data():
 if __name__ == '__main__':
     before = os.getcwd()
     os.chdir('data')
-    
-    for file in os.listdir('cldmask/'):
-        t = extract_timestamp(file)
-        if not os.path.isfile('simpleimage/simpleimage' + t + '.jpg'):
-            print('There is no simple image for ' + t)
-
-
-#    print('Creating directories')
-#    create_dirs()
-#    print('Unpacking tars')
-#    unpack_all_tars()
-#    print('Simplifying names')
-#    simplify_all_names()
-#    print('Removing images without masks')
-#    remove_images_without_matching_masks()
-#   print('Simplifying images')
-#   print(str(simplify_images()) + ' images processed')
-#    print('Simplifying masks')
-#    print('[White, Blue, Gray] = ' + str(simplify_masks()))
-#    print('Saving non-sky masks')
-#    save_non_sky_masks()
-#    print('Separating data')
-#    test, valid, train = separate_data()
-#    print(str(len(test)) + ' test cases; ' +
-#          str(len(valid)) + ' validation cases; ' +
-#          str(len(train)) + ' training cases.')
+    print('Creating directories')
+    create_dirs()
+    print('Unpacking tars')
+    unpack_all_tars()
+    print('Simplifying names')
+    simplify_all_names()
+    print('Removing images without masks')
+    remove_images_without_matching_masks()
+    print('Simplifying images')
+    print(str(simplify_images()) + ' images processed')
+    print('Simplifying masks')
+    print('[White, Blue, Gray] = ' + str(simplify_masks()))
+    print('Saving non-sky masks')
+    save_non_sky_masks()
+    print('Separating data')
+    test, valid, train = separate_data()
+    print(str(len(test)) + ' test cases; ' +
+          str(len(valid)) + ' validation cases; ' +
+          str(len(train)) + ' training cases.')
     os.chdir(before)
     print('Done')
