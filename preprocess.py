@@ -253,9 +253,9 @@ if __name__ == '__main__':
     os.chdir('data')
     
     for file in os.listdir('cldmask/'):
-    t = extract_timestamp(file)
-    if not os.path.isfile('simpleimage/simpleimage' + t + '.jpg'):
-        print('There is no simple image for ' + t)
+        t = extract_timestamp(file)
+        if not os.path.isfile('simpleimage/simpleimage' + t + '.jpg'):
+            print('There is no simple image for ' + t)
 
 
 #    print('Creating directories')
