@@ -21,6 +21,7 @@ import argparse
 
 TIME_STAMP = 20160414162830
 PRINT_ALL = False
+SHOW = True
 
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
@@ -36,18 +37,17 @@ WHITE_FOR_BLUE = [0, 170, 0]  # Medium green
 WHITE_FOR_GRAY = [0, 255, 0]  # Bright green
 
 
-def show_comparison_images(outputs, targets):
-    """Shows images of where outputs differ targets, color-coded by how they
-    agree or disagree. Destructively modifies targets."""
-    targets[np.logical_and((outputs == BLUE).all(axis=2), (targets == GRAY).all(axis=2))] = BLUE_FOR_GRAY
-    targets[np.logical_and((outputs == BLUE).all(axis=2), (targets == WHITE).all(axis=2))] = BLUE_FOR_WHITE
-    targets[np.logical_and((outputs == GRAY).all(axis=2), (targets == BLUE).all(axis=2))] = GRAY_FOR_BLUE
-    targets[np.logical_and((outputs == GRAY).all(axis=2), (targets == WHITE).all(axis=2))] = GRAY_FOR_WHITE
-    targets[np.logical_and((outputs == WHITE).all(axis=2), (targets == BLUE).all(axis=2))] = WHITE_FOR_BLUE
-    targets[np.logical_and((outputs == WHITE).all(axis=2), (targets == GRAY).all(axis=2))] = WHITE_FOR_GRAY
-    disp = Image.fromarray(targets.astype('uint8'))
-    disp.show()
-
+def show_comparison_image(output, target, path):
+    """Shows image of where output differs from target, color-coded by how they
+    agree or disagree. Destructively modifies target."""
+    target[np.logical_and((output == BLUE).all(axis=2), (target == GRAY).all(axis=2))] = BLUE_FOR_GRAY
+    target[np.logical_and((output == BLUE).all(axis=2), (target == WHITE).all(axis=2))] = BLUE_FOR_WHITE
+    target[np.logical_and((output == GRAY).all(axis=2), (target == BLUE).all(axis=2))] = GRAY_FOR_BLUE
+    target[np.logical_and((output == GRAY).all(axis=2), (target == WHITE).all(axis=2))] = GRAY_FOR_WHITE
+    target[np.logical_and((output == WHITE).all(axis=2), (target == BLUE).all(axis=2))] = WHITE_FOR_BLUE
+    target[np.logical_and((output == WHITE).all(axis=2), (target == GRAY).all(axis=2))] = WHITE_FOR_GRAY
+    disp = Image.fromarray(target.astype('uint8'))
+    show_and_save(disp, path)
 
 
 def read_parameters(directory):
@@ -88,6 +88,11 @@ def out_to_image(output):
     max_indexes = np.argmax(output, axis=3)
     return one_hot_to_mask(max_indexes, output)
 
+def show_and_save(img, path):
+    if SHOW:
+        img.show()
+    img.save(path)
+    
 def load_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, result_dir, num_iterations):
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(num_iterations))
@@ -96,13 +101,11 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, res
         img = out_to_image(y.eval(feed_dict={x: inputs, ns:ns_vals}))[0]
         if(PRINT_ALL):
             mask = np.array(misc.imread('data/simplemask/simplemask' + str(TIME_STAMP) + '.png'))
-            Image.fromarray(inputs[0].astype('uint8')).show()
-            Image.fromarray(mask.astype('uint8')).show()
-            show_comparison_images(img, mask)
+            show_and_save(Image.fromarray(inputs[0].astype('uint8')), result_dir + 'input.png')
+            show_and_save(Image.fromarray(mask.astype('uint8')), result_dir + 'correct.png')
+            show_comparison_image(img, mask, result_dir + 'comparison.png')
         img = Image.fromarray(img.astype('uint8'))
-        img.show()
-        img.save(result_dir + 'net-output.png')
-        
+        show_and_save(img, result_dir + 'net-output.png')
         accuracy = accuracy.eval(feed_dict={x: inputs, y_: get_masks([TIME_STAMP]), ns: ns_vals})
         print('Accuracy = ' + str(accuracy))
 
@@ -110,15 +113,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('directory')
     parser.add_argument('--compare', help='If typed, images used to compare output will be displayed', action='store_true')
+    parser.add_argument('--noshow', help='If typed, images are merely saved, not displayed', action='store_true')
     parser.add_argument('--time', help='Sets the time stamp to be loaded', type=int)
     args = parser.parse_args()
     print 
     if args.time:
         TIME_STAMP = args.time
-    
     if args.compare:
         PRINT_ALL = True
-    
+    if args.noshow:
+        SHOW = False
     dir_name = "results/" + args.directory + "/"        
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)
