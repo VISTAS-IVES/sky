@@ -15,7 +15,7 @@ file = dir_name = "results/" + sys.argv[1] + "/output.txt"
 with open(file) as f:
     data = f.readlines()
 
-data = data[1:]  # Strip off first and last line
+data = data[1:]  # Strip off header line
 x = [row.split('\t')[0] for row in data]
 train = [row.split('\t')[1] for row in data]
 valid = [row.split('\t')[2] for row in data]
