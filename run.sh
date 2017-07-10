@@ -9,4 +9,4 @@
 
 module load Python/intel-python3.5.2
 echo $options
-srun --unbuffered python train.py $options
+srun --unbuffered python analyze.py $options
