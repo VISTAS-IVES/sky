@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Command line arguments:
-job_number learning_rate kernel_width layer_size_1 ... layer_size_n
+job_number kernel_width layer_size_1 ... layer_size_n
 
 Created on Mon May 22 10:20:00 2017
 
@@ -32,7 +32,7 @@ WHITE = np.array([255, 255, 255])
 GRAY = np.array([192, 192, 192])
 
 # Distances from center of an image
-BATCH_SIZE = 50
+BATCH_SIZE = 2
 LEARNING_RATE = 0.0001
 
 def check_for_commit():
@@ -165,6 +165,8 @@ def max_out(inputs, num_units, axis=None):
 #        h = conv2d(prev, W, num) + b
 #    return h
 
+def max_pool_layer(value, kernel_width, num):
+    return tf.nn.max_pool(value,[1,65,65,1],strides=[1, 1, 1, 1], padding='SAME', name = 'max_pool'+str(num))
 
 def convo_layer(num_in, num_out, width, prev, num, relu=True):
     
@@ -190,17 +192,21 @@ def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
     tf.reset_default_graph()
     ns = tf.placeholder(dtype = tf.float32, shape = (None, 480, 480 ,1))
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
-    num_layers = len(layer_sizes)+1
-    h = [None] * (num_layers)
-    if (num_layers > 1):
-        h[0] = convo_layer(3, layer_sizes[0], kernel_width, x, 0)
-        for i in range(1, num_layers-1):
-            h[i] = convo_layer(layer_sizes[i-1], layer_sizes[i], kernel_width, h[i-1], i)
-        h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, kernel_width, h[num_layers-2], num_layers-1, False)
-    else:
-        h[0] = convo_layer(3, 3, kernel_width, x, 0, False)
-    m = mask_layer(h[num_layers-1], ns)
-    y = tf.reshape(m, [-1, 4])
+    h = convo_layer(3, 32, kernel_width, x, 0)
+    p = max_pool_layer(h, kernel_width, 1)
+#    num_layers = len(layer_sizes)+1
+#    h = [None] * (num_layers)
+#    if (num_layers > 1):
+#        h[0] = convo_layer(3, layer_sizes[0], kernel_width, x, 0)
+#        for i in range(1, num_layers-1):
+#            h[i] = convo_layer(layer_sizes[i-1], layer_sizes[i], kernel_width, h[i-1], i)
+#        h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, kernel_width, h[num_layers-2], num_layers-1, False)
+#    else:
+#        h[0] = convo_layer(3, 3, kernel_width, x, 0, False)
+#    m = mask_layer(h[num_layers-1], ns)
+    c = tf.concat([h, p], 3)
+    h2 = convo_layer(64, 4, kernel_width, c, 1)
+    y = tf.reshape(h2, [-1, 4])
     y_ = tf.placeholder(tf.int64, [None])
     cross_entropy = tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))
@@ -225,7 +231,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
             j = 0
-            for i in range(1, 10 + 1):
+            for i in range(1, 2 + 1):
                 j += 1
                 if (j*BATCH_SIZE >= len(train_stamps)):
                     j = 1
@@ -233,25 +239,30 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
                 batch = train_stamps[(j-1)*BATCH_SIZE : j*BATCH_SIZE]
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
-                ns_vals = get_nsmasks(batch)
-                train_step.run(feed_dict={x: inputs, y_: correct, ns: ns_vals})
+                train_step.run(feed_dict={x: inputs, y_: correct})
                 if i % 1 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
+#                    train_accuracy = accuracy.eval(feed_dict={
+#                            x: inputs, y_: correct, ns: ns_vals})
+#                    valid_accuracy = accuracy.eval(feed_dict={
+#                            x: valid_inputs, y_: valid_correct, ns: valid_ns_vals})
                     train_accuracy = accuracy.eval(feed_dict={
-                            x: inputs, y_: correct, ns: ns_vals})
+                            x: inputs, y_: correct})
                     valid_accuracy = accuracy.eval(feed_dict={
-                            x: valid_inputs, y_: valid_correct, ns: valid_ns_vals})
+                            x: valid_inputs, y_: valid_correct})
 
                     print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                             
-            
+                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy))  
         stop = time.time()  
         F = open(out_dir + 'parameters.txt',"a")
         F.write("Elapsed time:\t" + str(stop - start) + " seconds\n")
         F.close()
 
 if __name__ == '__main__':
-    check_for_commit()
-    job_number = sys.argv[1]
+    #check_for_commit()
+    tim = time.time()
+    print(tim)
+    job_number = str(tim)
     kernel_width = int(sys.argv[2])
     layer_sizes = sys.argv[3::]
     layer_sizes_print = '_'.join(layer_sizes)
