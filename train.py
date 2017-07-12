@@ -32,7 +32,7 @@ WHITE = np.array([255, 255, 255])
 GRAY = np.array([192, 192, 192])
 
 # Distances from center of an image
-BATCH_SIZE = 2
+BATCH_SIZE = 50
 LEARNING_RATE = 0.0001
 
 def check_for_commit():
@@ -214,8 +214,7 @@ def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
     correct_prediction = tf.equal(tf.argmax(y, 1), y_)
     saver = tf.train.Saver()
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    init = tf.global_variables_initializer()
-    
+    init = tf.global_variables_initializer()    
     return train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy
 
 
@@ -231,7 +230,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
             j = 0
-            for i in range(1, 2 + 1):
+            for i in range(1, 2000 + 1):
                 j += 1
                 if (j*BATCH_SIZE >= len(train_stamps)):
                     j = 1
@@ -240,7 +239,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
                 train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 1 == 0:
+                if i % 25 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
 #                    train_accuracy = accuracy.eval(feed_dict={
 #                            x: inputs, y_: correct, ns: ns_vals})
@@ -252,7 +251,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
                             x: valid_inputs, y_: valid_correct})
 
                     print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                             
-                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy))  
+#                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy))  
         stop = time.time()  
         F = open(out_dir + 'parameters.txt',"a")
         F.write("Elapsed time:\t" + str(stop - start) + " seconds\n")
@@ -260,9 +259,10 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
 
 if __name__ == '__main__':
     check_for_commit()
-    tim = time.time()
-    print(tim)
-    job_number = str(tim)
+#    tim = time.time()
+#    print(tim)
+#    job_number = str(tim)
+    job_number = sys.argv[1]
     kernel_width = int(sys.argv[2])
     layer_sizes = sys.argv[3::]
     layer_sizes_print = '_'.join(layer_sizes)
