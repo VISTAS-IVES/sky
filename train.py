@@ -32,7 +32,7 @@ WHITE = np.array([255, 255, 255])
 GRAY = np.array([192, 192, 192])
 
 # Distances from center of an image
-BATCH_SIZE = 50
+BATCH_SIZE = 2
 LEARNING_RATE = 0.0001
 
 def check_for_commit():
@@ -40,11 +40,12 @@ def check_for_commit():
     if (0 != (str(label).count('\\n'))):
         raise Exception('Not in clean git state\n')
 
-def save_params(job_number, learning_rate, kernel_width, layer_sizes, out_dir):
+def save_params(job_number, learning_rate, kernel_width, pool_width, layer_sizes, out_dir):
     F = open(out_dir + 'parameters.txt',"w+")
     F.write("Job number:\t" + str(job_number) + "\n")
     F.write("Learning rate:\t" + str(learning_rate) + "\n")
     F.write("Kernel width:\t" + str(kernel_width) + "\n")
+    F.write("Pool width:\t" + str(pool_width) + "\n")
     F.write("Layer sizes:\t" + ' '.join(layer_sizes) + "\n")
     label = subprocess.check_output(["git", "rev-parse", "HEAD"])
     F.write("Git commit:\t" + str(label)[2:-3:] + "\n")
@@ -165,8 +166,8 @@ def max_out(inputs, num_units, axis=None):
 #        h = conv2d(prev, W, num) + b
 #    return h
 
-def max_pool_layer(value, kernel_width, num):
-    return tf.nn.max_pool(value,[1,65,65,1],strides=[1, 1, 1, 1], padding='SAME', name = 'max_pool'+str(num))
+def max_pool_layer(value, pool_width, num):
+    return tf.nn.max_pool(value,[1,pool_width,pool_width,1],strides=[1, 1, 1, 1], padding='SAME', name = 'max_pool'+str(num))
 
 def convo_layer(num_in, num_out, width, prev, num, relu=True):
     
@@ -181,32 +182,34 @@ def convo_layer(num_in, num_out, width, prev, num, relu=True):
             h = conv2d(prev, W, num) + b   
     return h
 
-      
+def pool_convo_combo(prev, kernel_width, pool_width, num_in, num_out, layer_num, relu = True):
+    h = convo_layer(num_in, num_out, kernel_width, prev, layer_num, relu)
+    p = max_pool_layer(h, pool_width, layer_num)
+    c = tf.concat([h, p], 3)
+    return c
 
 def mask_layer(last_layer, ns_vals):
     #ns_vals = tf.constant(ns_vals)
     return tf.concat([last_layer, ns_vals], 3)
 
-def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
+def build_net(learning_rate=0.0001, kernel_width = 3, pool_width = 9, layer_sizes=[32, 32]):
     print("Building network")
     tf.reset_default_graph()
-    ns = tf.placeholder(dtype = tf.float32, shape = (None, 480, 480 ,1))
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
-    h = convo_layer(3, 32, kernel_width, x, 0)
-    p = max_pool_layer(h, kernel_width, 1)
-#    num_layers = len(layer_sizes)+1
-#    h = [None] * (num_layers)
-#    if (num_layers > 1):
-#        h[0] = convo_layer(3, layer_sizes[0], kernel_width, x, 0)
-#        for i in range(1, num_layers-1):
-#            h[i] = convo_layer(layer_sizes[i-1], layer_sizes[i], kernel_width, h[i-1], i)
-#        h[num_layers-1] = convo_layer(layer_sizes[num_layers-2], 3, kernel_width, h[num_layers-2], num_layers-1, False)
-#    else:
-#        h[0] = convo_layer(3, 3, kernel_width, x, 0, False)
-#    m = mask_layer(h[num_layers-1], ns)
-    c = tf.concat([h, p], 3)
-    h2 = convo_layer(64, 4, kernel_width, c, 1)
-    y = tf.reshape(h2, [-1, 4])
+
+    num_layers = len(layer_sizes)+1
+    h = [None] * (num_layers)
+    if (num_layers > 1):
+        # make first layer
+        h[0] = pool_convo_combo(x, kernel_width, pool_width, 3, layer_sizes[0], 0)
+        for i in range(1, num_layers-1):
+            # make middle layers
+            h[i] = pool_convo_combo(h[i-1], kernel_width, pool_width, layer_sizes[i-1]*2, layer_sizes[i], i)
+        # make last layer
+        h[num_layers-1] = convo_layer(layer_sizes[num_layers-2]*2, 4, kernel_width, h[num_layers-2], num_layers-1, False)
+    else:
+        h[0] = pool_convo_combo(x, kernel_width, pool_width, 3, 3, 0, False)
+    y = tf.reshape(h[num_layers-1], [-1, 4])
     y_ = tf.placeholder(tf.int64, [None])
     cross_entropy = tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))
@@ -215,10 +218,10 @@ def build_net(learning_rate=0.0001, kernel_width = 3, layer_sizes=[32, 32]):
     saver = tf.train.Saver()
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     init = tf.global_variables_initializer()    
-    return train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy
+    return train_step, accuracy, saver, init, x, y, y_, cross_entropy
 
 
-def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
+def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
               valid_inputs, valid_correct, valid_ns_vals, result_dir):
     print("Training network")
     start = time.time()
@@ -230,7 +233,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
             j = 0
-            for i in range(1, 2000 + 1):
+            for i in range(1, 2 + 1):
                 j += 1
                 if (j*BATCH_SIZE >= len(train_stamps)):
                     j = 1
@@ -239,7 +242,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
                 train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 25 == 0:
+                if i % 1 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
 #                    train_accuracy = accuracy.eval(feed_dict={
 #                            x: inputs, y_: correct, ns: ns_vals})
@@ -264,10 +267,11 @@ if __name__ == '__main__':
 #    job_number = str(tim)
     job_number = sys.argv[1]
     kernel_width = int(sys.argv[2])
-    layer_sizes = sys.argv[3::]
+    pool_width = int(sys.argv[3])
+    layer_sizes = sys.argv[4::]
     layer_sizes_print = '_'.join(layer_sizes)
     out_dir = 'results/exp' + job_number + '/'
     os.makedirs(out_dir)
-    save_params(job_number, LEARNING_RATE, kernel_width, layer_sizes, out_dir)
+    save_params(job_number, LEARNING_RATE, kernel_width, pool_width, layer_sizes, out_dir)
     layer_sizes = list(map(int, layer_sizes))
-    train_net(*build_net(LEARNING_RATE, kernel_width, layer_sizes), *load_validation_batch(), out_dir)
+    train_net(*build_net(LEARNING_RATE, kernel_width, pool_width, layer_sizes), *load_validation_batch(), out_dir)

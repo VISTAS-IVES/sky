@@ -88,12 +88,11 @@ def out_to_image(output):
     max_indexes = np.argmax(output, axis=3)
     return one_hot_to_mask(max_indexes, output)
 
-def load_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, result_dir, num_iterations):
+def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_dir, num_iterations):
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(num_iterations))
         inputs = get_inputs([TIME_STAMP])
-        ns_vals = get_nsmasks([TIME_STAMP])
-        img = out_to_image(y.eval(feed_dict={x: inputs, ns:ns_vals}))[0]
+        img = out_to_image(y.eval(feed_dict={x: inputs}))[0]
         if(PRINT_ALL):
             mask = np.array(misc.imread('data/simplemask/simplemask' + str(TIME_STAMP) + '.png'))
             Image.fromarray(inputs[0].astype('uint8')).show()
@@ -103,7 +102,7 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, res
         img.show()
         img.save(result_dir + 'net-output.png')
         
-        accuracy = accuracy.eval(feed_dict={x: inputs, y_: get_masks([TIME_STAMP]), ns: ns_vals})
+        accuracy = accuracy.eval(feed_dict={x: inputs, y_: get_masks([TIME_STAMP])})
         print('Accuracy = ' + str(accuracy))
 
 if __name__ == '__main__':
@@ -123,6 +122,7 @@ if __name__ == '__main__':
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)
     kernel_width = int(args['Kernel width'])
+    pool_width = int(args['Pool width'])
     layer_sizes = list(map(int, args['Layer sizes'].split()))
-    load_net(*build_net(0, kernel_width, layer_sizes), dir_name, step_version)
+    load_net(*build_net(0, kernel_width, pool_width, layer_sizes), dir_name, step_version)
 

@@ -40,7 +40,7 @@ def put_kernels_on_grid (kernel, kernel_size, layer_size):
     img.show()
 
 
-def load_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, result_dir, num_iterations, kernel_width, layer_size):
+def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_dir, num_iterations, kernel_width, layer_size):
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(num_iterations))
         with tf.variable_scope('hidden0'):
@@ -55,10 +55,10 @@ if __name__ == '__main__':
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)
     kernel_width = int(args['Kernel width'])
-   # layer_sizes = list(map(int, args['Layer sizes'].split()))
-    
-    layer_sizes = [32]
-    load_net(*build_net(0, kernel_width, layer_sizes), dir_name, step_version, kernel_width, layer_sizes[0])
+    pool_width = int(args['Pool width'])
+    layer_sizes = list(map(int, args['Layer sizes'].split()))
+
+    load_net(*build_net(0, kernel_width, pool_width, layer_sizes), dir_name, step_version, kernel_width, layer_sizes[0])
 #    with tf.Session() as sess:
 #       saver.restore(sess, directory + 'weights-' + str(step_version))
 #       with tf.variable_scope('hidden0'):

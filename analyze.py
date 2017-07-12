@@ -97,29 +97,27 @@ def disagreement_rate(output, target):
     return np.sum((output != target).any(axis=2)) / (480*480)
 
 
-def run_stamps(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy, result_dir, iteration, stamps):
+def run_stamps(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_dir, iteration, stamps):
     """Loads the images and nsmasks for the specified timestamps and runs the
     network (using saved weights for iteration) on them. Returns the output images."""
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(iteration))
         inputs = get_inputs(stamps)
-        ns_vals = get_nsmasks(stamps)
-        outputs = out_to_image(y.eval(feed_dict={x: inputs, ns: ns_vals}))
+        outputs = out_to_image(y.eval(feed_dict={x: inputs}))
         return outputs.reshape(-1, 480, 480, 3)
 
 
 def find_worst_results(num_worst, time_stamps, directory, step_version, kernel, layers):
     """Returns the the timestamps of the num_worst images for which the network
     most disagrees with the target masks."""
-    train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy = build_net(kernel_width=kernel, layer_sizes=layers)
+    train_step, accuracy, saver, init, x, y, y_, cross_entropy = build_net(kernel_width=kernel, layer_sizes=layers)
     with tf.Session() as sess:
         saver.restore(sess, directory + 'weights-' + str(step_version))
         time_stamps = read_valid_stamps()
         num_inconsistent = np.zeros(len(time_stamps))
         for i, s in enumerate(time_stamps):
             inputs = get_inputs([s])
-            ns_vals = get_nsmasks([s])
-            result = out_to_image(y.eval(feed_dict={x: inputs, ns: ns_vals}))
+            result = out_to_image(y.eval(feed_dict={x: inputs}))
             result = result.reshape(480, 480, 3)
             mask = read_target(s)
             num_inconsistent[i] = disagreement_rate(result, mask)
@@ -146,9 +144,10 @@ if __name__ == '__main__':
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)
     kernel_width = int(args['Kernel width'])
+    pool_width = int(args['Pool width'])
     layer_sizes = list(map(int, args['Layer sizes'].split()))
     worst_timestamps = find_worst_results(5, timestamps, dir_name, step_version, kernel_width, layer_sizes)
     print("Worst timestamps:\t" + str(worst_timestamps))
-    outputs = run_stamps(*build_net(0, kernel_width, layer_sizes), dir_name, step_version, worst_timestamps)
+    outputs = run_stamps(*build_net(0, kernel_width, pool_width, layer_sizes), dir_name, step_version, worst_timestamps)
     targets = read_targets(worst_timestamps)
     show_comparison_images(outputs, targets)

@@ -32,7 +32,7 @@ import random
 import pickle
 import time
 
-    WHITE = np.array([255, 255, 255])
+WHITE = np.array([255, 255, 255])
 BLUE = np.array([0, 0, 255])
 GRAY = np.array([192, 192, 192])
 BLACK = np.array([0, 0, 0])
@@ -261,7 +261,7 @@ if __name__ == '__main__':
     print('Simplifying masks')
     print('[White, Blue, Gray] = ' + str(simplify_masks()))
     print('Saving non-sky masks')
-    save_non_sky_masks()
+    #save_non_sky_masks()
     print('Separating data')
     test, valid, train = separate_data()
     print(str(len(test)) + ' test cases; ' +
