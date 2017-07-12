@@ -55,9 +55,9 @@ if __name__ == '__main__':
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)
     kernel_width = int(args['Kernel width'])
-    layer_sizes = list(map(int, args['Layer sizes'].split()))
+   # layer_sizes = list(map(int, args['Layer sizes'].split()))
     
-    layer_sizes[0] = 32
+    layer_sizes = [32]
     load_net(*build_net(0, kernel_width, layer_sizes), dir_name, step_version, kernel_width, layer_sizes[0])
 #    with tf.Session() as sess:
 #       saver.restore(sess, directory + 'weights-' + str(step_version))
