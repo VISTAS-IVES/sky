@@ -259,7 +259,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, ns, cross_entropy,
         F.close()
 
 if __name__ == '__main__':
-    #check_for_commit()
+    check_for_commit()
     tim = time.time()
     print(tim)
     job_number = str(tim)
