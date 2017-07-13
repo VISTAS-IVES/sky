@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Command line arguments:
-job_number kernel_width layer_size_1 ... layer_size_n
+job_number kernel_width pooling_width layer_size_1 ... layer_size_n
 
 Created on Mon May 22 10:20:00 2017
 

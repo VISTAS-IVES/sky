@@ -69,11 +69,11 @@ def show_comparison_images(outputs, targets):
         disp.show()
 
 
-def read_valid_stamps():
+def read_valid_stamps(batch_size):
     """Reads the valid.stamps file in data and returns a list of stamps."""
     with open('data/valid.stamps', 'rb') as f:
         valid_stamps = pickle.load(f)
-    valid_stamps = valid_stamps[:BATCH_SIZE]
+    valid_stamps = valid_stamps[:batch_size]
     return valid_stamps
 
 
@@ -113,7 +113,7 @@ def find_worst_results(num_worst, time_stamps, directory, step_version, kernel, 
     train_step, accuracy, saver, init, x, y, y_, cross_entropy = build_net(kernel_width=kernel, layer_sizes=layers)
     with tf.Session() as sess:
         saver.restore(sess, directory + 'weights-' + str(step_version))
-        time_stamps = read_valid_stamps()
+        time_stamps = read_valid_stamps(BATCH_SIZE)
         num_inconsistent = np.zeros(len(time_stamps))
         for i, s in enumerate(time_stamps):
             inputs = get_inputs([s])
@@ -139,7 +139,7 @@ def show_sky_images(timestamps):
 
 
 if __name__ == '__main__':
-    timestamps = read_valid_stamps()
+    timestamps = read_valid_stamps(BATCH_SIZE)
     dir_name = "results/" + sys.argv[1] + "/"
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)
