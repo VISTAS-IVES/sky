@@ -188,13 +188,35 @@ def pool_convo_combo(prev, kernel_width, pool_width, num_in, num_out, layer_num,
     c = tf.concat([h, p], 3)
     return c
 
-def mask_layer(last_layer, ns_vals):
-    #ns_vals = tf.constant(ns_vals)
-    return tf.concat([last_layer, ns_vals], 3)
+#def mask_layer(last_layer, ns_vals):
+#    #ns_vals = tf.constant(ns_vals)
+#    return tf.concat([last_layer, ns_vals], 3)
+
+def mask_layer(last_layer, b_mask):
+    btf_mask = tf.constant(b_mask)
+    return tf.add(btf_mask, last_layer)
+
+def make_b_mask_boolean(img):
+    """Takes a black/non-black image and return a corresponding True/False mask."""
+    black_mask = np.zeros((480, 480), dtype=bool)
+    black_mask[(img == BLACK).all(axis=2)] = True
+    return black_mask
+
+
+def give_b_mask_black_values(bool_mask):
+    """Takes a boolean mask and returns a 3-channel image with [0, 0, 1e7]
+    where the mask is True, [0, 0, 0] elsewhere."""
+    black_mask = np.zeros((480, 480, 4), dtype=np.float32)
+    black_mask[bool_mask] = [0.0, 0.0, 0.0, 10000000.0]
+    return black_mask
+
+
 
 def build_net(learning_rate=0.0001, kernel_width = 3, pool_width = 9, layer_sizes=[32, 32]):
     print("Building network")
     tf.reset_default_graph()
+    bool_mask = make_b_mask_boolean(misc.imread('data/b_mask.png'))
+    b_mask = give_b_mask_black_values(bool_mask)
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
 
     num_layers = len(layer_sizes)+1
@@ -209,7 +231,8 @@ def build_net(learning_rate=0.0001, kernel_width = 3, pool_width = 9, layer_size
         h[num_layers-1] = convo_layer(layer_sizes[num_layers-2]*2, 4, kernel_width, h[num_layers-2], num_layers-1, False)
     else:
         h[0] = pool_convo_combo(x, kernel_width, pool_width, 3, 3, 0, False)
-    y = tf.reshape(h[num_layers-1], [-1, 4])
+    m = mask_layer(h[num_layers-1], b_mask)
+    y = tf.reshape(m, [-1, 4])
     y_ = tf.placeholder(tf.int64, [None])
     cross_entropy = tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))

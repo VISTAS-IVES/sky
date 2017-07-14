@@ -197,6 +197,15 @@ def create_non_sky_mask(mask):
     ns_mask[(mask == BLACK).all(axis=2)] = BLACK
     return ns_mask
 
+
+def make_always_black_mask():
+    b_mask = np.full((480,480,3),BLACK)
+    for file in os.listdir('simplemask/'):
+        img = misc.imread('simplemask/' + file)
+        b_mask[(img != BLACK).all(axis=2)] = BLUE
+    Image.fromarray(b_mask.astype('uint8')).save('b_mask.png')
+    return 1
+
 def save_non_sky_masks():
     """Creates a mask of pixels which are black or green in every cldmask and
     saves it to always_black_mask.png."""
@@ -254,18 +263,20 @@ if __name__ == '__main__':
 #    unpack_all_tars()
 #    print('Simplifying names')
 #    simplify_all_names()
-    print('Removing images without masks')
-    remove_images_without_matching_masks()
-    print('Simplifying images')
-    print(str(simplify_images()) + ' images processed')
-    print('Simplifying masks')
-    print('[White, Blue, Gray] = ' + str(simplify_masks()))
-    print('Saving non-sky masks')
-    #save_non_sky_masks()
-    print('Separating data')
-    test, valid, train = separate_data()
-    print(str(len(test)) + ' test cases; ' +
-          str(len(valid)) + ' validation cases; ' +
-          str(len(train)) + ' training cases.')
+#    print('Removing images without masks')
+#    remove_images_without_matching_masks()
+#    print('Simplifying images')
+#    print(str(simplify_images()) + ' images processed')
+#    print('Simplifying masks')
+#    print('[White, Blue, Gray] = ' + str(simplify_masks()))
+#    print('Saving non-sky masks')
+#    #save_non_sky_masks()
+#    print('Separating data')
+#    test, valid, train = separate_data()
+#    print(str(len(test)) + ' test cases; ' +
+#          str(len(valid)) + ' validation cases; ' +
+#          str(len(train)) + ' training cases.')
+    print('making always black mask')
+    make_always_black_mask()
     os.chdir(before)
     print('Done')
