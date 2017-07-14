@@ -121,8 +121,7 @@ if __name__ == '__main__':
     dir_name = "results/" + args.directory + "/"        
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)
-    kernel_width = int(args['Kernel width'])
-    pool_width = int(args['Pool width'])
-    layer_sizes = list(map(int, args['Layer sizes'].split()))
-    load_net(*build_net(0, kernel_width, pool_width, layer_sizes), dir_name, step_version)
+    layer_info = args['Layer info'].split()
+    
+    load_net(*build_net(layer_info, 0), dir_name, step_version)
 

@@ -54,11 +54,13 @@ if __name__ == '__main__':
     dir_name = "results/" + dir_name + "/"
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)
-    kernel_width = int(args['Kernel width'])
-    pool_width = int(args['Pool width'])
-    layer_sizes = list(map(int, args['Layer sizes'].split()))
+    layer_info = args['Layer info'].split()
 
-    load_net(*build_net(0, kernel_width, pool_width, layer_sizes), dir_name, step_version, kernel_width, layer_sizes[0])
+    hold2 = layer_info[0].split("-")
+    args = hold2[1:]
+
+
+    load_net(*build_net(layer_info, 0), dir_name, step_version, int(args[0]), int(args[1]))
 #    with tf.Session() as sess:
 #       saver.restore(sess, directory + 'weights-' + str(step_version))
 #       with tf.variable_scope('hidden0'):

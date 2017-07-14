@@ -35,7 +35,7 @@ def make_confusion_matrix(num_worst, time_stamps, directory, step_version, kerne
     most disagrees with the target masks."""
     
     confusion_matrix = [[0.0]*num for _ in range(num)]
-    train_step, accuracy, saver, init, x, y, y_, cross_entropy = build_net(kernel_width=kernel, layer_sizes=layers)
+    train_step, accuracy, saver, init, x, y, y_, cross_entropy = build_net(layers)
     with tf.Session() as sess:
         saver.restore(sess, directory + 'weights-' + str(step_version))
         for i, s in enumerate(time_stamps):
@@ -65,7 +65,6 @@ if __name__ == '__main__':
     dir_name = "results/" + args.directory + "/"       
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)
-    kernel_width = int(args['Kernel width'])
-    pool_width = int(args['Pool width'])
-    layer_sizes = list(map(int, args['Layer sizes'].split()))
-    make_confusion_matrix(5, timestamps, dir_name, step_version, kernel_width, layer_sizes, num)
+    layer_info = args['Layer info'].split()
+    
+    make_confusion_matrix(5, timestamps, dir_name, step_version, kernel_width, layer_info, num)
