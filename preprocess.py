@@ -41,12 +41,12 @@ YELLOW = np.array([255, 255, 0])
 
 
 def create_dirs():
-    os.mkdir('skyimage')
-    os.mkdir('cldmask')
-    os.mkdir('simpleimage')
-    os.mkdir('simplemask')
-    os.mkdir('nsmask')
-
+#    os.mkdir('skyimage')
+#    os.mkdir('cldmask')
+#    os.mkdir('simpleimage')
+#    os.mkdir('simplemask')
+#    os.mkdir('nsmask')
+    os.mkdir('greenmask')
 
 def unpack_tar(file, dir):
     """Given a tarfile file, moves it to dir, unpacks it, and deletes it."""
@@ -128,7 +128,7 @@ def color_counts(img):
 
 def simplify_colors(img):
     """Returns an image with GREEN and YELLOW pixels made black. Destructively modifies img."""
-    img[(img == GREEN).all(axis=2)] = BLACK
+    #img[(img == GREEN).all(axis=2)] = BLACK
     img[(img == YELLOW).all(axis=2)] = BLACK
     return img
 
@@ -199,11 +199,19 @@ def create_non_sky_mask(mask):
 
 
 def make_always_black_mask():
-    b_mask = np.full((480,480,3),BLACK)
-    for file in os.listdir('simplemask/'):
-        img = misc.imread('simplemask/' + file)
-        b_mask[(img != BLACK).all(axis=2)] = BLUE
+    b_mask = np.full((480,480,3), BLACK)
+    for file in os.listdir('greenmask/'):
+        img = misc.imread('greenmask/' + file)
+        b_mask[(img != BLACK).any(axis=2)] = BLUE
     Image.fromarray(b_mask.astype('uint8')).save('b_mask.png')
+    return 1
+
+def make_always_green_mask():
+    g_mask = np.full((480,480,3), GREEN)
+    for file in os.listdir('greenmask/'):
+        img = misc.imread('greenmask/' + file)
+        g_mask[(img != GREEN).any(axis=2)] = BLUE
+    Image.fromarray(g_mask.astype('uint8')).save('g_mask.png')
     return 1
 
 def save_non_sky_masks():
@@ -230,7 +238,7 @@ def simplify_masks():
             img = remove_white_sun(img)
         simplified = simplify_colors(img)
         counts = counts + color_counts(simplified)
-        Image.fromarray(simplified).save('simplemask/simplemask' + extract_timestamp(file) + '.png')
+        Image.fromarray(simplified).save('greenmask/greenmask' + extract_timestamp(file) + '.png')
     return (counts / counts.sum())
 
 
@@ -278,5 +286,6 @@ if __name__ == '__main__':
 #          str(len(train)) + ' training cases.')
     print('making always black mask')
     make_always_black_mask()
+    make_always_green_mask()
     os.chdir(before)
     print('Done')

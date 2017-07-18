@@ -30,6 +30,7 @@ BLACK = np.array([0, 0, 0])
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
 GRAY = np.array([192, 192, 192])
+GREEN = np.array([0, 255, 0])
 
 # Distances from center of an image
 BATCH_SIZE = 2
@@ -75,6 +76,7 @@ def mask_to_index(img):
     result[(img == BLUE).all(axis=2)] = 1
     result[(img == GRAY).all(axis=2)] = 2
     result[(img == BLACK).all(axis=2)] = 3
+    result[(img == GREEN).all(axis=2)] = 4
     return result
 
 
@@ -88,22 +90,31 @@ def get_inputs(stamps):
     return inputs
 
 
-def mask_layer(last_layer, b_mask):
+def mask_layer(last_layer, b_mask, g_mask):
     btf_mask = tf.constant(b_mask)
-    return tf.add(btf_mask, last_layer)
+    gtf_mask = tf.constant(g_mask)
+    return tf.add(gtf_mask, tf.add(btf_mask, last_layer))
 
 def make_b_mask_boolean(img):
     """Takes a black/non-black image and return a corresponding True/False mask."""
     black_mask = np.zeros((480, 480), dtype=bool)
-    black_mask[(img == BLACK).all(axis=2)] = True
+    black_mask[(img != BLUE).any(axis=2)] = True
     return black_mask
 
 
 def give_b_mask_black_values(bool_mask):
     """Takes a boolean mask and returns a 3-channel image with [0, 0, 1e7]
     where the mask is True, [0, 0, 0] elsewhere."""
-    black_mask = np.zeros((480, 480, 4), dtype=np.float32)
-    black_mask[bool_mask] = [0.0, 0.0, 0.0, 10000000.0]
+    black_mask = np.zeros((480, 480, 5), dtype=np.float32)
+    black_mask[bool_mask] = [0.0, 0.0, 0.0, 10000000.0, 0]
+    return black_mask
+
+
+def give_g_mask_green_values(bool_mask):
+    """Takes a boolean mask and returns a 3-channel image with [0, 0, 1e7]
+    where the mask is True, [0, 0, 0] elsewhere."""
+    black_mask = np.zeros((480, 480, 5), dtype=np.float32)
+    black_mask[bool_mask] = [0.0, 0.0, 0.0, 0.0, 10000000.0]
     return black_mask
 
 
@@ -113,7 +124,7 @@ def get_masks(stamps):
     single vector."""
     masks = np.empty((len(stamps), 480, 480))
     for i, s in enumerate(stamps):
-        masks[i] = mask_to_index(np.array(misc.imread('data/simplemask/simplemask' + str(s) + '.png')))
+        masks[i] = mask_to_index(np.array(misc.imread('data/greenmask/greenmask' + str(s) + '.png')))
     return masks.reshape((-1))
 
 def format_nsmask(img):
@@ -247,8 +258,11 @@ def get_name_oper(layer):
 def build_net(layer_info, learning_rate=0.0001):
     print("Building network")
     tf.reset_default_graph()
-    bool_mask = make_b_mask_boolean(misc.imread('data/b_mask.png'))
+    bool_mask = make_b_mask_boolean(misc.imread('data/b_mask.png'))    
     b_mask = give_b_mask_black_values(bool_mask)
+    
+    bool_mask = make_b_mask_boolean(misc.imread('data/g_mask.png'))
+    g_mask = give_g_mask_green_values(bool_mask)
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
     num_layers = len(layer_info)
     table, last_name = parse_layer_info(layer_info)
@@ -267,8 +281,8 @@ def build_net(layer_info, learning_rate=0.0001):
                 h[name] = tf.concat([h[table[name]["prev_1"]], h[table[name]["prev_2"]]], 3)
  
     h[last_name] = convo_layer(table[last_name]["ins"], table[last_name]["outs"], table[last_name]["kernel"], h[table[last_name]["prev"]], table[last_name]["tf_name"], False)
-    m = mask_layer(h[last_name], b_mask)
-    y = tf.reshape(m, [-1, 4])
+    m = mask_layer(h[last_name], b_mask, g_mask)
+    y = tf.reshape(m, [-1, 5])
     y_ = tf.placeholder(tf.int64, [None])
     cross_entropy = tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))
@@ -324,10 +338,10 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
 
 if __name__ == '__main__':
 #    check_for_commit()
-#    tim = time.time()
-#    print(tim)
-#    job_number = str(tim)
-    job_number = sys.argv[1]
+    tim = time.time()
+    print(tim)
+    job_number = str(tim)
+#    job_number = sys.argv[1]
     layer_info = sys.argv[2::]
     layer_sizes_print = '_'.join(layer_info)
     out_dir = 'results/exp' + job_number + '/'

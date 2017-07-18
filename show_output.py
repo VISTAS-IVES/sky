@@ -25,7 +25,7 @@ PRINT_ALL = False
 BLUE = np.array([0, 0, 255])
 WHITE = np.array([255, 255, 255])
 GRAY = np.array([192, 192, 192])
-
+GREEN = np.array([0, 255, 0])
 # BLUE_FOR_GRAY (for example) means our net gave blue when the target mask
 # gave gray
 BLUE_FOR_GRAY = [85, 0, 0]  # Very dark red
@@ -78,12 +78,13 @@ def one_hot_to_mask(max_indices, output):
     out[(max_indices == 1)] = BLUE
     out[(max_indices == 2)] = GRAY
     out[(max_indices == 3)] = BLACK
+    out[(max_indices == 4)] = GREEN
     return out
 
 def out_to_image(output):
     """Modifies (and returns) the output of the network for the 0th image as a
     human-readable RGB image."""
-    output = output.reshape([-1, 480, 480, 4])
+    output = output.reshape([-1, 480, 480, 5])
     # We use argmax instead of softmax so that we really will get one-hots
     max_indexes = np.argmax(output, axis=3)
     return one_hot_to_mask(max_indexes, output)
