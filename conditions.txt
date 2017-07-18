@@ -1,6 +1,1 @@
-42-00 a:conv-3-32-in b:maxpool-1-35-a c:maxpool-35-1-a d:concat-a-b e:concat-c-d f:conv-3-32-e g:maxpool-1-35-f h:maxpool-35-1-f i:concat-f-g j:concat-h-i k:conv-3-32-j l:maxpool-1-35-k m:maxpool-35-1-k n:concat-k-l o:concat-m-n p:conv-3-32-o q:conv-3-4-p
-42-01 a:conv-3-32-in b:maxpool-1-35-a c:maxpool-35-1-a d:concat-a-b e:concat-c-d f:conv-3-32-e g:maxpool-1-35-f h:maxpool-35-1-f i:concat-f-g j:concat-h-i k:conv-3-32-j l:maxpool-1-35-k m:maxpool-35-1-k n:concat-k-l o:concat-m-n p:conv-3-32-o q:conv-3-4-p
-42-02 a:conv-5-32-in b:maxpool-1-35-a c:maxpool-35-1-a d:concat-a-b e:concat-c-d f:conv-5-32-e g:maxpool-1-35-f h:maxpool-35-1-f i:concat-f-g j:concat-h-i k:conv-5-32-j l:maxpool-1-35-k m:maxpool-35-1-k n:concat-k-l o:concat-m-n p:conv-5-32-o q:conv-5-4-p
-42-03 a:conv-5-32-in b:maxpool-1-35-a c:maxpool-35-1-a d:concat-a-b e:concat-c-d f:conv-5-32-e g:maxpool-1-35-f h:maxpool-35-1-f i:concat-f-g j:concat-h-i k:conv-5-32-j l:maxpool-1-35-k m:maxpool-35-1-k n:concat-k-l o:concat-m-n p:conv-5-32-o q:conv-5-4-p
-42-04 a:conv-7-32-in b:maxpool-1-35-a c:maxpool-35-1-a d:concat-a-b e:concat-c-d f:conv-7-32-e g:maxpool-1-35-f h:maxpool-35-1-f i:concat-f-g j:concat-h-i k:conv-7-32-j l:maxpool-1-35-k m:maxpool-35-1-k n:concat-k-l o:concat-m-n p:conv-7-32-o q:conv-7-4-p
-42-05 a:conv-7-32-in b:maxpool-1-35-a c:maxpool-35-1-a d:concat-a-b e:concat-c-d f:conv-7-32-e g:maxpool-1-35-f h:maxpool-35-1-f i:concat-f-g j:concat-h-i k:conv-7-32-j l:maxpool-1-35-k m:maxpool-35-1-k n:concat-k-l o:concat-m-n p:conv-7-32-o q:conv-7-4-p
+preprocessing one line only
