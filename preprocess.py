@@ -265,8 +265,8 @@ def separate_data():
 if __name__ == '__main__':
     before = os.getcwd()
     os.chdir('data')
-#    print('Creating directories')
-#    create_dirs()
+    print('Creating directories')
+    create_dirs()
 #    print('Unpacking tars')
 #    unpack_all_tars()
 #    print('Simplifying names')
@@ -275,8 +275,8 @@ if __name__ == '__main__':
 #    remove_images_without_matching_masks()
 #    print('Simplifying images')
 #    print(str(simplify_images()) + ' images processed')
-#    print('Simplifying masks')
-#    print('[White, Blue, Gray] = ' + str(simplify_masks()))
+    print('Simplifying masks')
+    print('[White, Blue, Gray] = ' + str(simplify_masks()))
 #    print('Saving non-sky masks')
 #    #save_non_sky_masks()
 #    print('Separating data')
@@ -284,8 +284,9 @@ if __name__ == '__main__':
 #    print(str(len(test)) + ' test cases; ' +
 #          str(len(valid)) + ' validation cases; ' +
 #          str(len(train)) + ' training cases.')
-    print('making always black mask')
+    print('Making always black mask')
     make_always_black_mask()
+    print('Making always green mask')
     make_always_green_mask()
     os.chdir(before)
     print('Done')
