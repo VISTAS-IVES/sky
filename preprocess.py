@@ -123,7 +123,9 @@ def color_counts(img):
     blue = (img == BLUE).all(axis=2).sum()
     white = (img == WHITE).all(axis=2).sum()
     gray = (img == GRAY).all(axis=2).sum()
-    return np.array([blue, white, gray])
+    green = (img == GREEN).all(axis=2).sum()
+    black = (img == BLACK).all(axis=2).sum()
+    return np.array([white, blue, gray, black, green])
 
 
 def simplify_colors(img):
@@ -225,8 +227,8 @@ def save_non_sky_masks():
 
 def simplify_masks():
     """Writes similified versions of all images in in_dir to out_dir.
-    Returns an array of relative frequencies of WHITE, BLUE, and GRAY."""
-    counts = np.zeros(3, dtype=np.int)
+    Returns an array of relative frequencies of WHITE, BLUE, GRAY, GREEN, and BLACK."""
+    counts = np.zeros(5, dtype=np.int)
     for file in os.listdir('cldmask/'):
         img = misc.imread('cldmask/' + file)
         img = crop_image(img)
