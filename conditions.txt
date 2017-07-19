@@ -1,15 +1,15 @@
-exp43-0 a:conv-1-16-in b:conv-K-5-a
-exp43-1 a:conv-1-16-in b:conv-K-5-a
-exp43-2 a:conv-1-32-in b:conv-K-5-a
-exp43-3 a:conv-1-32-in b:conv-K-5-a
-exp43-4 a:conv-3-16-in b:conv-K-5-a
-exp43-5 a:conv-3-16-in b:conv-K-5-a
-exp43-6 a:conv-3-32-in b:conv-K-5-a
-exp43-7 a:conv-3-32-in b:conv-K-5-a
-exp43-8 a:conv-5-16-in b:conv-K-5-a
-exp43-9 a:conv-5-16-in b:conv-K-5-a
-exp43-10 a:conv-5-32-in b:conv-K-5-a
-exp43-11 a:conv-5-32-in b:conv-K-5-a
+exp43-0 a:conv-1-16-in b:conv-1-5-a
+exp43-1 a:conv-1-16-in b:conv-1-5-a
+exp43-2 a:conv-1-32-in b:conv-1-5-a
+exp43-3 a:conv-1-32-in b:conv-1-5-a
+exp43-4 a:conv-3-16-in b:conv-3-5-a
+exp43-5 a:conv-3-16-in b:conv-3-5-a
+exp43-6 a:conv-3-32-in b:conv-3-5-a
+exp43-7 a:conv-3-32-in b:conv-3-5-a
+exp43-8 a:conv-5-16-in b:conv-5-5-a
+exp43-9 a:conv-5-16-in b:conv-5-5-a
+exp43-10 a:conv-5-32-in b:conv-5-5-a
+exp43-11 a:conv-5-32-in b:conv-5-5-a
 exp43-12 a:conv-1-16-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-1-5-e
 exp43-13 a:conv-1-16-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-1-5-e
 exp43-14 a:conv-1-32-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-1-5-e
