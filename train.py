@@ -337,11 +337,11 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
 
 
 if __name__ == '__main__':
-#    check_for_commit()
-    tim = time.time()
-    print(tim)
-    job_number = str(tim)
-#    job_number = sys.argv[1]
+    check_for_commit()
+#    tim = time.time()
+#    print(tim)
+#    job_number = str(tim)
+    job_number = sys.argv[1]
     layer_info = sys.argv[2::]
     layer_sizes_print = '_'.join(layer_info)
     out_dir = 'results/exp' + job_number + '/'
