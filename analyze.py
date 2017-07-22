@@ -59,14 +59,15 @@ def show_comparison_images(outputs, targets):
     """Shows images of where outputs differ targets, color-coded by how they
     agree or disagree. Destructively modifies targets."""
     for i in range(len(outputs)):
-        targets[i][np.logical_and((outputs[i] == BLUE).all(axis=2), (targets[i] == GRAY).all(axis=2))] = BLUE_FOR_GRAY
-        targets[i][np.logical_and((outputs[i] == BLUE).all(axis=2), (targets[i] == WHITE).all(axis=2))] = BLUE_FOR_WHITE
-        targets[i][np.logical_and((outputs[i] == GRAY).all(axis=2), (targets[i] == BLUE).all(axis=2))] = GRAY_FOR_BLUE
-        targets[i][np.logical_and((outputs[i] == GRAY).all(axis=2), (targets[i] == WHITE).all(axis=2))] = GRAY_FOR_WHITE
-        targets[i][np.logical_and((outputs[i] == WHITE).all(axis=2), (targets[i] == BLUE).all(axis=2))] = WHITE_FOR_BLUE
-        targets[i][np.logical_and((outputs[i] == WHITE).all(axis=2), (targets[i] == GRAY).all(axis=2))] = WHITE_FOR_GRAY
-        disp = Image.fromarray(targets[i].astype('uint8'))
-        disp.show()
+#        targets[i][np.logical_and((outputs[i] == BLUE).all(axis=2), (targets[i] == GRAY).all(axis=2))] = BLUE_FOR_GRAY
+#        targets[i][np.logical_and((outputs[i] == BLUE).all(axis=2), (targets[i] == WHITE).all(axis=2))] = BLUE_FOR_WHITE
+#        targets[i][np.logical_and((outputs[i] == GRAY).all(axis=2), (targets[i] == BLUE).all(axis=2))] = GRAY_FOR_BLUE
+#        targets[i][np.logical_and((outputs[i] == GRAY).all(axis=2), (targets[i] == WHITE).all(axis=2))] = GRAY_FOR_WHITE
+#        targets[i][np.logical_and((outputs[i] == WHITE).all(axis=2), (targets[i] == BLUE).all(axis=2))] = WHITE_FOR_BLUE
+#        targets[i][np.logical_and((outputs[i] == WHITE).all(axis=2), (targets[i] == GRAY).all(axis=2))] = WHITE_FOR_GRAY
+         targets[i][(outputs[i] != BLUE).any(axis=2)] = [255,0,0]
+#        disp = Image.fromarray(targets[i].astype('uint8'))
+#        disp.show()
 
 
 def read_valid_stamps(batch_size):

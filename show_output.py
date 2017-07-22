@@ -12,6 +12,7 @@ Created on Fri Jun  2 14:58:47 2017
 """
 
 from train import build_net, get_inputs, get_masks, format_nsmask, get_nsmasks, BLACK
+from train_2 import build_net_two
 import numpy as np
 import sys
 import tensorflow as tf
@@ -70,6 +71,16 @@ def read_last_iteration_number(directory):
     line = file[len(file) - 1]
     return (line.split()[0])
 
+def out_to_black(output):
+    """Modifies (and returns) the output of the network for the 0th image as a
+    human-readable RGB image."""
+    output = output.reshape([1, 480, 480, 2])
+    # We use argmax instead of softmax so that we really will get one-hots
+    max_indexes = np.argmax(output, axis=3)
+    ret = np.zeros([1, 480, 480, 1])
+    ret[(max_indexes == 1).all(axis=2)] = [10000000.0]
+    return ret
+
 def one_hot_to_mask(max_indices, output):
     """Modifies (and returns) img to have sensible colors in place of
     one-hot vectors."""
@@ -77,8 +88,8 @@ def one_hot_to_mask(max_indices, output):
     out[(max_indices == 0)] = WHITE
     out[(max_indices == 1)] = BLUE
     out[(max_indices == 2)] = GRAY
-    out[(max_indices == 3)] = BLACK
-    out[(max_indices == 4)] = GREEN
+    out[(max_indices == 3)] = GREEN
+    out[(max_indices == 4)] = BLACK
     return out
 
 def out_to_image(output):
@@ -89,11 +100,13 @@ def out_to_image(output):
     max_indexes = np.argmax(output, axis=3)
     return one_hot_to_mask(max_indexes, output)
 
-def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_dir, num_iterations):
+def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, b_mask, net1_args, result_dir, num_iterations):
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(num_iterations))
         inputs = get_inputs([TIME_STAMP])
-        img = out_to_image(y.eval(feed_dict={x: inputs}))[0]
+        ns_masks = net1_args["y"].eval(feed_dict={net1_args["x"]: inputs})
+        ns_masks = out_to_black(ns_masks)
+        img = out_to_image(y.eval(feed_dict={x: inputs, b_mask: ns_masks}))[0]
         if(PRINT_ALL):
             mask = np.array(misc.imread('data/simplemask/simplemask' + str(TIME_STAMP) + '.png'))
             Image.fromarray(inputs[0].astype('uint8')).show()
@@ -108,7 +121,8 @@ def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('directory')
+    parser.add_argument('directory1')
+    parser.add_argument('directory2')
     parser.add_argument('--compare', help='If typed, images used to compare output will be displayed', action='store_true')
     parser.add_argument('--time', help='Sets the time stamp to be loaded', type=int)
     args = parser.parse_args()
@@ -119,10 +133,15 @@ if __name__ == '__main__':
     if args.compare:
         PRINT_ALL = True
     
-    dir_name = "results/" + args.directory + "/"        
-    args = read_parameters(dir_name)
-    step_version = read_last_iteration_number(dir_name)
-    layer_info = args['Layer info'].split()
+    dir_name1 = "results/" + args.directory1 + "/"        
+    args1 = read_parameters(dir_name1)
+    step_version = read_last_iteration_number(dir_name1)
+    layer_info = args1['Layer info'].split()
     
-    load_net(*build_net(layer_info, 0), dir_name, step_version)
+    dir_name2 = 'results/' + args.directory2 + '/'
+    args2 = read_parameters(dir_name2)
+    step_version = read_last_iteration_number(dir_name2)
+    net_one_layer_info = args2['Layer info'].split()
+    
+    load_net(*build_net_two(layer_info, net_one_layer_info, dir_name1, step_version, 0), dir_name1, step_version)
 
