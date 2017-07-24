@@ -1,16 +1,15 @@
-45-00 a:conv-5-16-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-5-e
-45-01 a:conv-5-16-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-5-e
-45-02 a:conv-5-32-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-5-e
-45-03 a:conv-5-32-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-5-e
-45-04 a:conv-5-16-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-16-e g:concat-a-f h:conv-5-5-g
-45-05 a:conv-5-16-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-16-e g:concat-a-f h:conv-5-5-g
-45-06 a:conv-5-32-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-32-e g:concat-a-f h:conv-5-5-g
-45-07 a:conv-5-32-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-32-e g:concat-a-f h:conv-5-5-g
-45-08 a:conv-5-16-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-16-e g:conv-5-16-f h:concat-a-g i:conv-5-5-h
-45-09 a:conv-5-16-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-16-e g:conv-5-16-f h:concat-a-g i:conv-5-5-h
-45-10 a:conv-5-32-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-32-e g:conv-5-32-f h:concat-a-g i:conv-5-5-h
-45-11 a:conv-5-32-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-32-e g:conv-5-32-f h:concat-a-g i:conv-5-5-h
-45-12 a:conv-5-16-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-16-e g:conv-5-16-f h:conv-5-16-g i:concat-a-h j:conv-5-5-i
-45-13 a:conv-5-16-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-16-e g:conv-5-16-f h:conv-5-16-g i:concat-a-h j:conv-5-5-i
-45-14 a:conv-5-32-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-32-e g:conv-5-32-f h:conv-5-32-g i:concat-a-h j:conv-5-5-i
-45-15 a:conv-5-32-in b:maxpool-1-100-a c:maxpool-100-1-a d:concat-a-b e:concat-c-d f:conv-5-32-e g:conv-5-32-f h:conv-5-32-g i:concat-a-h j:conv-5-5-i
+46-00 a:conv-5-16-in b:conv-5-16-a c:conv-5-16 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-01 a:conv-5-16-in b:conv-5-16-a c:conv-5-16 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-02 a:conv-5-16-in b:conv-5-16-a c:conv-5-16 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-03 a:conv-5-16-in b:conv-5-16-a c:conv-5-16 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-04 a:conv-5-16-in b:conv-5-16-a c:conv-5-16 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-05 a:conv-5-32-in b:conv-5-32-a c:conv-5-32 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-06 a:conv-5-32-in b:conv-5-32-a c:conv-5-32 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-07 a:conv-5-32-in b:conv-5-32-a c:conv-5-32 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-08 a:conv-5-32-in b:conv-5-32-a c:conv-5-32 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-09 a:conv-5-32-in b:conv-5-32-a c:conv-5-32 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-10 a:conv-5-64-in b:conv-5-64-a c:conv-5-64 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-11 a:conv-5-64-in b:conv-5-64-a c:conv-5-64 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-12 a:conv-5-64-in b:conv-5-64-a c:conv-5-64 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-13 a:conv-5-64-in b:conv-5-64-a c:conv-5-64 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
+46-14 a:conv-5-64-in b:conv-5-64-a c:conv-5-64 d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-5-5-h
