@@ -8,7 +8,7 @@ Created on Wed Jul 19 10:04:42 2017
 
 exp = 46
 i = 0
-variants = ('a:conv-{0}-{1}-in b:conv-{0}-{1}-a c:conv-{0}-{1} d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-{0}-5-h',)
+variants = ('a:conv-{0}-{1}-in b:conv-{0}-{1}-a c:conv-{0}-{1}-b d:maxpool-1-100-c e:maxpool-100-1-c f:concat-c-d g:concat-e-f h:concat-g-in i:conv-{0}-5-h',)
 
 for v in variants:
     for kernel_width in (5, ):
