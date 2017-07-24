@@ -208,7 +208,7 @@ def convo_layer(num_in, num_out, width, prev, name, relu=True):
 #    return tf.concat([last_layer, ns_vals], 3)
 
 def parse_layer_info(layer_info):
-    table = {}
+    table = {'in':{'outs':3}}
     count = 0
     name = ""
     for layer in layer_info:
@@ -225,7 +225,7 @@ def parse_layer_info(layer_info):
             tf_name = name
             if count == 0:
                 ins = 3
-                tf_name = "hidden0"
+                tf_name = "hidden0" # First hidden layer always has this specific name so show_kernels can find it
             else:
                 ins = table[args[2]]['outs']
             prev_name = args[2]    
