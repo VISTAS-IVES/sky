@@ -306,7 +306,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
             j = 0
-            for i in range(1, 3000 + 1):
+            for i in range(1, 1000 + 1):
                 j += 1
                 if (j*BATCH_SIZE >= len(train_stamps)):
                     j = 1
