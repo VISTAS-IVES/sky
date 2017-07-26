@@ -128,7 +128,7 @@ if __name__ == '__main__':
     print(args.directory)
     counts = np.zeros([480 * 480, 5])
     for d in args.directory:
-        dir_name = "results/" + d + "/"
+        dir_name = d + "/" # Does NOT include results/ to allow shell globbing
         print(dir_name)
         args = read_parameters(dir_name)
         step_version = read_last_iteration_number(dir_name)
@@ -139,6 +139,7 @@ if __name__ == '__main__':
     img = out_to_image(counts)[0]
     img = Image.fromarray(img.astype('uint8'))
     img.show()
+    img.save('results/ensemble-output.png')
     # Determine final image accuracy
     correctness = np.equal(np.argmax(counts, 1), get_masks([TIME_STAMP])).astype(float)
     print('Final accuracy: ' + str(correctness.mean()))
