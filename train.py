@@ -33,7 +33,7 @@ GRAY = np.array([192, 192, 192])
 GREEN = np.array([0, 255, 0])
 
 # Distances from center of an image
-BATCH_SIZE = 50
+BATCH_SIZE = 10
 LEARNING_RATE = 0.0001
 
 def check_for_commit():
@@ -68,17 +68,28 @@ def mask_to_one_hot(img):
     return img
 
 
-def mask_to_index(img):
+
+def mask_to_index_1(img):
+    """Returns a new version of img with an index (expected color)
+    for each pixel."""
+    result = np.ndarray(shape=[img.shape[0], img.shape[1]])
+    result[(img == WHITE).all(axis=2)] = 0
+    result[(img == BLUE).all(axis=2)] = 0
+    result[(img == GRAY).all(axis=2)] = 0
+    result[(img == BLACK).all(axis=2)] = 1
+    result[(img == GREEN).all(axis=2)] = 0
+    return result
+
+def mask_to_index_2(img):
     """Returns a new version of img with an index (expected color)
     for each pixel."""
     result = np.ndarray(shape=[img.shape[0], img.shape[1]])
     result[(img == WHITE).all(axis=2)] = 0
     result[(img == BLUE).all(axis=2)] = 1
     result[(img == GRAY).all(axis=2)] = 2
-    result[(img == BLACK).all(axis=2)] = 3
-    result[(img == GREEN).all(axis=2)] = 4
+    result[(img == BLACK).all(axis=2)] = 3 
+    result[(img == GREEN).all(axis=2)] = 3
     return result
-
 
 def get_inputs(stamps):
     """Returns a tensor of images specified by stamps. Dimensions are: image,
@@ -90,10 +101,9 @@ def get_inputs(stamps):
     return inputs
 
 
-def mask_layer(last_layer, b_mask, g_mask):
+def mask_layer1(last_layer, b_mask):
     btf_mask = tf.constant(b_mask)
-    gtf_mask = tf.constant(g_mask)
-    return tf.add(gtf_mask, tf.add(btf_mask, last_layer))
+    return tf.add(btf_mask, last_layer)
 
 def make_b_mask_boolean(img):
     """Takes a black/non-black image and return a corresponding True/False mask."""
@@ -101,12 +111,16 @@ def make_b_mask_boolean(img):
     black_mask[(img != BLUE).any(axis=2)] = True
     return black_mask
 
+def correct_to_ns_mask(corrects):
+    print(corrects.size())
+    return 1
+
 
 def give_b_mask_black_values(bool_mask):
     """Takes a boolean mask and returns a 3-channel image with [0, 0, 1e7]
     where the mask is True, [0, 0, 0] elsewhere."""
-    black_mask = np.zeros((480, 480, 5), dtype=np.float32)
-    black_mask[bool_mask] = [0.0, 0.0, 0.0, 10000000.0, 0]
+    black_mask = np.zeros((480, 480, 2), dtype=np.float32)
+    black_mask[bool_mask] = [0.0, 10000000.0]
     return black_mask
 
 
@@ -118,13 +132,16 @@ def give_g_mask_green_values(bool_mask):
     return black_mask
 
 
-def get_masks(stamps):
+def get_masks(stamps, net_num):
     """Returns a tensor of correct label categories specified by stamps.
     Dimensons are image, row, column. The tensor has been flattened into a
     single vector."""
     masks = np.empty((len(stamps), 480, 480))
     for i, s in enumerate(stamps):
-        masks[i] = mask_to_index(np.array(misc.imread('data/greenmask/greenmask' + str(s) + '.png')))
+        if net_num == 1:
+            masks[i] = mask_to_index_1(np.array(misc.imread('data/greenmask/greenmask' + str(s) + '.png')))
+        else:
+            masks[i] = mask_to_index_2(np.array(misc.imread('data/greenmask/greenmask' + str(s) + '.png')))
     return masks.reshape((-1))
 
 def format_nsmask(img):
@@ -132,12 +149,13 @@ def format_nsmask(img):
     where the mask is True, [0, 0, 0] elsewhere."""
     ns_mask = np.full((480, 480, 1), -1000000.0, dtype=np.float32)
     ns_mask[(img == BLACK).all(axis=2)] = [10000000.0]
+    ns_mask[(img == GREEN).all(axis=2)] = [10000000.0]
     return ns_mask
 
 def get_nsmasks(stamps):
     masks = np.empty((len(stamps), 480, 480, 1))
     for i, s in enumerate(stamps):
-        masks[i] = format_nsmask((np.array(misc.imread('data/nsmask/nsmask' + str(s) + '.png'))))
+        masks[i] = format_nsmask((np.array(misc.imread('data/greenmask/greenmask' + str(s) + '.png'))))
     return masks
 
 def weight_variable(shape, n_inputs, num):
@@ -161,9 +179,10 @@ def load_validation_batch():
         valid_stamps = pickle.load(f)
     valid_stamps = valid_stamps[:BATCH_SIZE]
     valid_inputs = get_inputs(valid_stamps)
-    valid_correct = get_masks(valid_stamps)
+    valid_correct_1 = get_masks(valid_stamps, 1)
+    valid_correct_2 = get_masks(valid_stamps, 2)
     valid_ns_vals = get_nsmasks(valid_stamps)
-    return valid_inputs, valid_correct, valid_ns_vals
+    return valid_inputs, valid_correct_1, valid_correct_2, valid_ns_vals
 
 
 def max_out(inputs, num_units, axis=None):
@@ -219,6 +238,7 @@ def parse_layer_info(layer_info):
         args = hold2[1:]
         info = {}
         
+        #[name]:conv-[kernel]-[outs]-[prev]
         if oper == 'conv' :
             kernel = args[0]
             outs = args[1]
@@ -231,6 +251,7 @@ def parse_layer_info(layer_info):
             prev_name = args[2]    
             info = {"outs":outs, "ins":ins, "kernel":kernel, "prev":prev_name, "tf_name":tf_name}
             
+        #[name]:maxpool-[width]-[heigh]-[prev]
         if oper == 'maxpool' :
             pool_width = args[0]
             pool_height = args[1]
@@ -238,6 +259,7 @@ def parse_layer_info(layer_info):
             prev_name = args[2]
             info = {"outs":outs, "pool_width":pool_width, "pool_height":pool_height, "prev":prev_name}
         
+        #[name]:concat-[prev1]-[prev2]
         if oper == 'concat' :
             outs = str(int(table[args[0]]["outs"]) + int(table[args[1]]["outs"]))
             prev_1 = args[0]
@@ -260,15 +282,15 @@ def build_net(layer_info, learning_rate=0.0001):
     tf.reset_default_graph()
     bool_mask = make_b_mask_boolean(misc.imread('data/b_mask.png'))    
     b_mask = give_b_mask_black_values(bool_mask)
-    
-    bool_mask = make_b_mask_boolean(misc.imread('data/g_mask.png'))
-    g_mask = give_g_mask_green_values(bool_mask)
-    x = tf.placeholder(tf.float32, [None, 480, 480, 3])
+#    
+#    bool_mask = make_b_mask_boolean(misc.imread('data/g_mask.png'))
+#    g_mask = give_g_mask_green_values(bool_mask)
+    x = tf.placeholder(tf.float32, [None, 480, 480, 3], name = "Input")
     num_layers = len(layer_info)
     table, last_name = parse_layer_info(layer_info)
     h = {}
     h["in"] = x
-    for n in range(0, num_layers-1):
+    for n in range(0, num_layers):
         # make first layer
         name, oper = get_name_oper(layer_info[n])
         if (oper == 'conv'):
@@ -278,24 +300,44 @@ def build_net(layer_info, learning_rate=0.0001):
             h[name] = max_pool_layer(h[table[name]["prev"]], table[name]["pool_width"], table[name]["pool_height"], name)
             
         if (oper == 'concat'):
-                h[name] = tf.concat([h[table[name]["prev_1"]], h[table[name]["prev_2"]]], 3)
+            h[name] = tf.concat([h[table[name]["prev_1"]], h[table[name]["prev_2"]]], 3)
  
-    h[last_name] = convo_layer(table[last_name]["ins"], table[last_name]["outs"], table[last_name]["kernel"], h[table[last_name]["prev"]], table[last_name]["tf_name"], False)
-    m = mask_layer(h[last_name], b_mask, g_mask)
-    y = tf.reshape(m, [-1, 5])
-    y_ = tf.placeholder(tf.int64, [None])
-    cross_entropy = tf.reduce_mean(
-        tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))
-    train_step = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
-    correct_prediction = tf.equal(tf.argmax(y, 1), y_)
+#    h["out1"] = convo_layer(table["out1"]["ins"], table["out1"]["outs"], table["out1"]["kernel"], h[table["out1"]["prev"]], table["out1"]["tf_name"], False)
+#    h["out2"] = convo_layer(table["out2"]["ins"], table["out2"]["outs"], table["out2"]["kernel"], h[table["out2"]["prev"]], table["out2"]["tf_name"], False)
+    m1 = mask_layer1(h["out1"], b_mask)
+    ns_masks = tf.placeholder(tf.float32, [None, 480, 480, 1], name = "ns_masks")
+    m2 = tf.concat([h["out2"],ns_masks],axis=3)
+    y1 = tf.reshape(m1, [-1, 2])
+    y2 = tf.reshape(m2, [-1, 4])
+    disp1 = y1
+    disp2 = h["out2"]
+    y_1 = tf.placeholder(tf.int64, [None], name = "y_1")
+    y_2 = tf.placeholder(tf.int64, [None], name = "y_2")
+    cross_entropy_1 = tf.reduce_mean(
+        tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_1, logits=y1))
+    train_step_1 = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy_1)
+    correct_prediction_1 = tf.equal(tf.argmax(y1, 1), y_1)
+    
+    cross_entropy_2 = tf.reduce_mean(
+        tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_2, logits=y2))
+    train_step_2 = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy_2)
+    correct_prediction_2 = tf.equal(tf.argmax(y2, 1), y_2)
+    
+    accuracy_1 = tf.reduce_mean(tf.cast(correct_prediction_1, tf.float32))
+    accuracy_2 = tf.reduce_mean(tf.cast(correct_prediction_2, tf.float32))
+
     saver = tf.train.Saver()
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    
+#    c = 
+#    
+#    e = tf.concat([o,y2], axis=2)
+    
     init = tf.global_variables_initializer()    
-    return train_step, accuracy, saver, init, x, y, y_, cross_entropy
+    return train_step_1, train_step_2, accuracy_1, accuracy_2, saver, init, x, y1, y_1, cross_entropy_1, y2, y_2, cross_entropy_2, ns_masks, disp1, disp2
 
 
-def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
-              valid_inputs, valid_correct, valid_ns_vals, result_dir):
+def train_net(train_step_1, train_step_2, accuracy_1, accuracy_2, saver, init, x, y1, y_1, cross_entropy_1, y2, y_2, cross_entropy_2, ns_masks, disp1, disp2,
+              valid_inputs, valid_correct_1, valid_correct_2, valid_ns_vals, result_dir):
     print("Training network")
     start = time.time()
     # Get image and make the mask into a one-hotted mask
@@ -306,27 +348,36 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
             j = 0
-            for i in range(1, 3000 + 1):
+            for i in range(1, 500 + 1):
                 j += 1
                 if (j*BATCH_SIZE >= len(train_stamps)):
                     j = 1
                 #batch = random.sample(train_stamps, BATCH_SIZE)
                 batch = train_stamps[(j-1)*BATCH_SIZE : j*BATCH_SIZE]
                 inputs = get_inputs(batch)
-                correct = get_masks(batch)
-                train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 25 == 0:
+                correct_1 = get_masks(batch, 1)
+                correct_2 = get_masks(batch, 2)
+                ns_mask = get_nsmasks(batch)
+                
+                train_step_1.run(feed_dict={x: inputs, y_1: correct_1})
+                train_step_2.run(feed_dict={x: inputs, y_2: correct_2, ns_masks: ns_mask})
+
+                if i % 10 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
 #                    train_accuracy = accuracy.eval(feed_dict={
 #                            x: inputs, y_: correct, ns: ns_vals})
 #                    valid_accuracy = accuracy.eval(feed_dict={
 #                            x: valid_inputs, y_: valid_correct, ns: valid_ns_vals})
-                    train_accuracy = accuracy.eval(feed_dict={
-                            x: inputs, y_: correct})
-                    valid_accuracy = accuracy.eval(feed_dict={
-                            x: valid_inputs, y_: valid_correct})
+                    train_accuracy_1 = accuracy_1.eval(feed_dict={
+                            x: inputs, y_1: correct_1})
+                    valid_accuracy_1 = accuracy_1.eval(feed_dict={
+                            x: valid_inputs, y_1: valid_correct_1})
 
-                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                             
+                    train_accuracy_2 = accuracy_2.eval(feed_dict={
+                            x: inputs, y_2: correct_2,  ns_masks: ns_mask})
+                    valid_accuracy_2 = accuracy_2.eval(feed_dict={
+                            x: valid_inputs, y_2: valid_correct_2,  ns_masks: ns_mask})
+                    print('{}\t{:1.5f}\t{:1.5f}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy_1, valid_accuracy_1, train_accuracy_2, valid_accuracy_2), file=f, flush=True)                             
 #                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy))  
         stop = time.time()  
         F = open(out_dir + 'parameters.txt',"a")
@@ -337,11 +388,11 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
 
 
 if __name__ == '__main__':
-    check_for_commit()
-#    tim = time.time()
-#    print(tim)
-#    job_number = str(tim)
-    job_number = sys.argv[1]
+#    check_for_commit()
+    tim = time.time()
+    print(tim)
+    job_number = str(tim)
+#    job_number = sys.argv[1]
     layer_info = sys.argv[2::]
     layer_sizes_print = '_'.join(layer_info)
     out_dir = 'results/exp' + job_number + '/'

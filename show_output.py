@@ -49,7 +49,6 @@ def show_comparison_images(outputs, targets):
     disp.show()
 
 
-
 def read_parameters(directory):
     """Reads the parameters.txt file in directory. Returns a dictionary
     associating labels with keys."""
@@ -70,7 +69,15 @@ def read_last_iteration_number(directory):
     line = file[len(file) - 1]
     return (line.split()[0])
 
-def one_hot_to_mask(max_indices, output):
+def one_hot_to_mask_1(max_indices, output):
+    """Modifies (and returns) img to have sensible colors in place of
+    one-hot vectors."""
+    out = np.zeros([len(output), 480, 480 ,3])
+    out[(max_indices == 0)] = BLUE
+    out[(max_indices == 1)] = BLACK
+    return out
+
+def one_hot_to_mask_2(max_indices, output):
     """Modifies (and returns) img to have sensible colors in place of
     one-hot vectors."""
     out = np.zeros([len(output), 480, 480 ,3])
@@ -81,30 +88,61 @@ def one_hot_to_mask(max_indices, output):
     out[(max_indices == 4)] = GREEN
     return out
 
-def out_to_image(output):
+def out_to_image_1(output):
     """Modifies (and returns) the output of the network for the 0th image as a
     human-readable RGB image."""
-    output = output.reshape([-1, 480, 480, 5])
+    output = output.reshape([-1, 480, 480, 2])
     # We use argmax instead of softmax so that we really will get one-hots
     max_indexes = np.argmax(output, axis=3)
-    return one_hot_to_mask(max_indexes, output)
+    return one_hot_to_mask_1(max_indexes, output)
 
-def load_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_dir, num_iterations):
+def out_to_image_2(output):
+    """Modifies (and returns) the output of the network for the 0th image as a
+    human-readable RGB image."""
+    output = output.reshape([-1, 480, 480, 4])
+    # We use argmax instead of softmax so that we really will get one-hots
+    max_indexes = np.argmax(output, axis=3)
+    return one_hot_to_mask_2(max_indexes, output)
+
+def out_to_image(out1, out2):
+    out1 = out1.reshape([-1, 480, 480, 2])
+    max1 = np.argmax(out1, axis=3)
+    print (max1)
+    print (np.shape(max1))
+    format1 = np.zeros([len(max1),480,480,1])
+    format1[max1 == 1.0] = [10000000.0]
+    out2 = out2.reshape([-1, 480, 480, 3])
+    out = np.concatenate((out2,format1), axis=3)
+    max_indexes = np.argmax(out, axis=3)
+    return one_hot_to_mask_2(max_indexes, out)
+
+def load_net(train_step_1, train_step_2, accuracy_1, accuracy_2, saver, init, x, y1, y_1, cross_entropy_1, y2, y_2, cross_entropy_2, ns_masks, disp1, disp2, result_dir, num_iterations):
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(num_iterations))
         inputs = get_inputs([TIME_STAMP])
-        img = out_to_image(y.eval(feed_dict={x: inputs}))[0]
+        ns_mask = get_nsmasks([TIME_STAMP])
+        out1 = disp1.eval(feed_dict={x: inputs})
+        out2 = disp2.eval(feed_dict={x: inputs, ns_masks: ns_mask})
+        img1 = out_to_image_1(out1)[0]
+        img2 = out_to_image_2(y2.eval(feed_dict={x: inputs, ns_masks: ns_mask}))[0]
+        img3 = out_to_image(out1, out2)[0]
+        
         if(PRINT_ALL):
             mask = np.array(misc.imread('data/simplemask/simplemask' + str(TIME_STAMP) + '.png'))
             Image.fromarray(inputs[0].astype('uint8')).show()
             Image.fromarray(mask.astype('uint8')).show()
             show_comparison_images(img, mask)
-        img = Image.fromarray(img.astype('uint8'))
-        img.show()
-        img.save(result_dir + 'net-output.png')
+        img1 = Image.fromarray(img1.astype('uint8'))
+        img2 = Image.fromarray(img2.astype('uint8'))
+        print (np.shape(img3))
+        img3 = Image.fromarray(img3.astype('uint8'))
+        img1.show()
+        img2.show()
+        img3.show()
+        img1.save(result_dir + 'net-output.png')
         
-        accuracy = accuracy.eval(feed_dict={x: inputs, y_: get_masks([TIME_STAMP])})
-        print('Accuracy = ' + str(accuracy))
+        accuracy_1 = accuracy_1.eval(feed_dict={x: inputs, y_1: get_masks([TIME_STAMP], 1)})
+        print('Accuracy = ' + str(accuracy_1))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
