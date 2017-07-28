@@ -33,7 +33,7 @@ GRAY = np.array([192, 192, 192])
 GREEN = np.array([0, 255, 0])
 
 # Distances from center of an image
-BATCH_SIZE = 50
+BATCH_SIZE = 5
 LEARNING_RATE = 0.0001
 
 def check_for_commit():
@@ -306,7 +306,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
             j = 0
-            for i in range(1, 2000 + 1):
+            for i in range(1, 10 + 1):
                 j += 1
                 if (j*BATCH_SIZE >= len(train_stamps)):
                     j = 1
@@ -315,7 +315,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
                 inputs = get_inputs(batch)
                 correct = get_masks(batch)
                 train_step.run(feed_dict={x: inputs, y_: correct})
-                if i % 25 == 0:
+                if i % 10 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
 #                    train_accuracy = accuracy.eval(feed_dict={
 #                            x: inputs, y_: correct, ns: ns_vals})
@@ -337,7 +337,7 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
 
 
 if __name__ == '__main__':
-    check_for_commit()
+#    check_for_commit()
 #    tim = time.time()
 #    print(tim)
 #    job_number = str(tim)

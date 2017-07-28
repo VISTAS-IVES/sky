@@ -128,7 +128,7 @@ if __name__ == '__main__':
     print(args.directory)
     counts = np.zeros([480 * 480, 5])
     for d in args.directory:
-        dir_name = d + "/" # Does NOT include results/ to allow shell globbing
+        dir_name = "results/" + d + "/" # Does NOT include results/ to allow shell globbing
         print(dir_name)
         args = read_parameters(dir_name)
         step_version = read_last_iteration_number(dir_name)
