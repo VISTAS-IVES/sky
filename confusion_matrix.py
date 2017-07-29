@@ -4,7 +4,7 @@ Created on Thu July 13 2017
 @author: jeffmullins
 """
 
-from train import build_net, get_inputs, format_nsmask, get_nsmasks
+from train import build_net, get_inputs, format_nsmask, get_nsmasks, get_masks
 from show_output import out_to_image, read_parameters, read_last_iteration_number
 from analyze import read_valid_stamps, read_target
 import numpy as np
