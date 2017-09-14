@@ -15,7 +15,7 @@ Created on Fri Jul  7 09:45:01 2017
 import matplotlib.pyplot as plt
 import numpy as np
 
-data = np.empty((1, 73))
+data = np.empty((1, 80))
 
 # Read in data
 for i in [11]:
@@ -32,7 +32,7 @@ fig = plt.figure()
 ax1 = fig.add_subplot(111)
 ax1.set_xlabel('Minibatches of 50 training images')
 ax1.set_ylabel('Accuracy')
-x = range(25, 1826, 25)
+x = range(25, 2001, 25)
 t, = ax1.plot(x, train, 'r', label='training')
 v, = ax1.plot(x, valid, 'b', label='validation')
 ax1.legend(bbox_to_anchor=(1, 0.2), handles=[t, v])
