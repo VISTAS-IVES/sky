@@ -4,19 +4,35 @@
 Preprocess Total Sky Imager data from arm.gov. To use this:
 
 1) Get the skyimage and cldmask data as described in Jessica's email.
-2) Put the tars in a new directory called 'data' (which should live in
+2) Put the .tar files in a new directory called 'data' (which should live in
 the same directory as this file -- git will ignore it).
 3) Run this file.
 
-This will create subfolders skyimage, cldmask, simpleimage, and simplemask.
-Our program runs on the last two. It also creates three files test.stamps,
-valid.stamps, and train.stamps; these are pickled lists of timestamp
-numbers, which our program uses to load the appropriate files during
-training.
+This will create (within data):
+    
+- A folder skyimage containing the raw sky images (which will have shorter
+names than the original files)
+- A folder cldmask containing the raw TSI cloud masks (again, renamed)
+- A folder simpleimage containing cropped 480x480 images
+- A folder simplemask containing cloud masks that have been cropped and had
+the sun removed from the shadowband
+- Files train.stamps, valid.stamps, and test.stamps. These contain the
+timestamp numbers for training, validation, and testing subsets of the data.
+These files are not human-readable; they are pickled Python lists.
+- Files always_black_mask.png and always_green_mask.png. These indicate
+pixels that always have a particular color in the mask, so the network needn't
+be asked to classify them.
+
+After all of this has succeeded, you may wish to delete the huge .tar files
+to save memory. Because obtaining them is nontrivial, this script does not
+automatically delete them.
 
 NOTE: For simplicity, the functions in this file assume that you are running
 them from the data directory. Running this file temporarily switches to that
 directory.
+
+See the code at the end for a high-level description of the steps this
+program goes through.
 
 Created on Fri May 26 10:45:02 2017
 
@@ -32,6 +48,7 @@ import random
 import pickle
 import time
 
+# These constants are colors that appear in cloud masks
 WHITE = np.array([255, 255, 255])
 BLUE = np.array([0, 0, 255])
 GRAY = np.array([192, 192, 192])
@@ -39,101 +56,40 @@ BLACK = np.array([0, 0, 0])
 GREEN = np.array([0, 255, 0])
 YELLOW = np.array([255, 255, 0])
 
+def count_colors(img):
+    """Returns an array of the number of WHITE, BLUE, GRAY, BLACK, and
+    GREEN pixels in img."""
+    colors = (WHITE, BLUE, GRAY, BLACK, GREEN)
+    counts = [(img == color).all(axis=2).sum() for color in colors]
+    return np.array(counts)
+
+def create_constant_mask(color, filename):
+    """Creates a mask where any pixels not of color are BLUE. Saves it in
+    filename."""
+    b_mask = np.full((480,480,3), color)
+    for file in os.listdir('simplemask/'):
+        img = misc.imread('simplemask/' + file)
+        b_mask[(img != color).any(axis=2)] = BLUE
+    Image.fromarray(b_mask.astype('uint8')).save(filename)
 
 def create_dirs():
-#    os.mkdir('skyimage')
-#    os.mkdir('cldmask')
-#    os.mkdir('simpleimage')
-#    os.mkdir('simplemask')
-#    os.mkdir('nsmask')
-    os.mkdir('greenmask')
+    """Creates the necessary directories (if they don't already exist)."""
+    for d in ('skyimage', 'cldmask', 'simpleimage', 'simplemask'):
+        if not os.path.isdir(d):
+            os.mkdir(d)
 
-def unpack_tar(file, dir):
-    """Given a tarfile file, moves it to dir, unpacks it, and deletes it."""
-    g = dir + file
-    os.rename(file, g)
-    tar = tarfile.open(g)
-    tar.extractall(path=dir)
-    tar.close()
-    # Sometimes this complains that g is still in use, so we're going to
-    # keep trying until it works
-    while True:
-        try:
-            os.remove(g)
-            break
-        except OSError as err:
-            continue
+def crop_image(img):
+    """Returns a version of img cropped down to 480 x 480."""
+    return np.delete(img,
+                     np.concatenate((np.arange(80), np.arange(80)+560)),
+                     axis=0)
 
-
-def unpack_all_tars():
-    for f in os.listdir('./'):
-        if f.endswith('.tar'):
-            if 'skyimage' in f:
-                unpack_tar(f, 'skyimage/')
-            elif 'cldmask' in f:
-                unpack_tar(f, 'cldmask/')
-
-
-def simplify_name(filename):
-    """Simplifies the filenames we get from arm.gov."""
-    return filename[6:filename.index('C1')] + filename[-18:]
-
-
-def simplify_all_names():
-    for dir in ('skyimage/', 'cldmask/'):
-        for f in os.listdir(dir):
-            os.rename(dir + f, dir + simplify_name(f))
-
-
-def extract_timestamp(filename):
-    """Assume filename ends in something like 20160415235930.jpg or
-    20160415235930.png."""
-    return filename[-18:-4]
-
-
-def remove_images_without_matching_masks():
+def delete_images_without_matching_masks():
     """Deletes image files that do not have matching mask files."""
     for f in os.listdir('skyimage/'):
         g = 'cldmask/cldmask' + extract_timestamp(f) + '.png'
         if (not os.path.isfile(g)) or (os.path.getsize(g) == 0):
             os.remove('skyimage/' + f)
-
-
-def crop_image(img):
-    """Crops img down to 480 x 480."""
-    return np.delete(img, np.concatenate((np.arange(80), np.arange(80)+560)), axis=0)
-
-
-def simplify_images():
-    """Crops the images in in_dir down to 480x480 and writes those to out_dir
-    and returns the number of images cropped"""
-    counts = 0
-    for file in os.listdir('skyimage/'):
-        if file[0] != '.':
-            img = misc.imread('skyimage/' + file)
-            cropped = crop_image(img)
-            counts = counts + 1
-            Image.fromarray(cropped).save('simpleimage/simpleimage' + extract_timestamp(file) + '.jpg')
-    return counts
-
-
-def color_counts(img):
-    """Returns an array of the number of BLUE, WHITE, and GRAY pixels
-    in img."""
-    blue = (img == BLUE).all(axis=2).sum()
-    white = (img == WHITE).all(axis=2).sum()
-    gray = (img == GRAY).all(axis=2).sum()
-    black = (img == BLACK).all(axis=2).sum()
-    green = (img == GREEN).all(axis=2).sum()
-    return np.array([white, blue, gray, black, green])
-
-
-def simplify_colors(img):
-    """Returns an image with GREEN and YELLOW pixels made black. Destructively modifies img."""
-    #img[(img == GREEN).all(axis=2)] = BLACK
-    img[(img == YELLOW).all(axis=2)] = BLACK
-    return img
-
 
 def depth_first_search(r, c, img, visited, ever_visited, stack):
     """Returns True if there is a connected region including img[r][c] that is all
@@ -154,10 +110,14 @@ def depth_first_search(r, c, img, visited, ever_visited, stack):
         stack.extend(((r+1, c), (r-1, c), (r, c+1), (r, c-1)))
     return True
 
+def extract_timestamp(filename):
+    """Returns the timestamp within filename. Assumes filename ends in
+    something like 20160415235930.jpg or 20160415235930.png."""
+    return filename[-18:-4]
 
 def remove_white_sun(img):
     """Removes the sun disk from img if it is white. (A yellow sun is easier
-    to remove; that is handled by simplify_colors.)"""
+    to remove; that is handled directly in simpllify_masks.)"""
     start = time.clock()
     ever_visited = np.full(img.shape[:2], False, dtype=bool)
     visited = np.full(img.shape[:2], False, dtype=bool)
@@ -174,85 +134,9 @@ def remove_white_sun(img):
     print('No sun found!')
     return img
 
-
-def test_remove():
-    img = misc.imread('data/cldmask/cldmask20160414174600.png')
-    img = remove_white_sun(img)
-    print(type(img))
-    img = Image.fromarray(img.astype('uint8'))
-    img.show()
-    return img
-
-
-def ns_mask_to_image(mask):
-    """Takes a mask of booleans and returns an image where each pixel is
-    BLACK if in the mask, BLUE otherwise."""
-    img = np.full((480, 480, 3), BLUE)
-    img[(mask)] = BLACK
-    return img
-
-
-def create_non_sky_mask(mask):
-    """Given a mask, creates a saves an image that is BLACK
-    for every place that is not sky and BLUE for every place that is sky"""
-    ns_mask = np.full((480, 480, 3), BLUE)
-    ns_mask[(mask == BLACK).all(axis=2)] = BLACK
-    return ns_mask
-
-
-def make_always_black_mask():
-    b_mask = np.full((480,480,3), BLACK)
-    for file in os.listdir('greenmask/'):
-        img = misc.imread('greenmask/' + file)
-        b_mask[(img != BLACK).any(axis=2)] = BLUE
-    Image.fromarray(b_mask.astype('uint8')).save('b_mask.png')
-    return 1
-
-def make_always_green_mask():
-    g_mask = np.full((480,480,3), GREEN)
-    for file in os.listdir('greenmask/'):
-        img = misc.imread('greenmask/' + file)
-        g_mask[(img != GREEN).any(axis=2)] = BLUE
-    Image.fromarray(g_mask.astype('uint8')).save('g_mask.png')
-    return 1
-
-def save_non_sky_masks():
-    """Creates a mask of pixels which are black or green in every cldmask and
-    saves it to always_black_mask.png."""
-    for file in os.listdir('simplemask/'):
-        mask = misc.imread('simplemask/' + file)
-        ns_mask = create_non_sky_mask(mask)
-        ns_mask = ns_mask.astype('uint8')
-        Image.fromarray(ns_mask).save('nsmask/nsmask' + extract_timestamp(file) + '.png')
-
-def simplify_masks():
-    """Writes similified versions of all images in in_dir to out_dir.
-    Returns an array of relative frequencies of WHITE, BLUE, GRAY, BLACK, and GREEN."""
-    counts = np.zeros(5, dtype=np.int)
-    for file in os.listdir('cldmask/'):
-        img = misc.imread('cldmask/' + file)
-        img = crop_image(img)
-        print('About to remove sun from ' + file)
-        if (img == YELLOW).all(axis=2).any():
-            print('Sun is yellow')
-        else:
-            print('Removing white sun')
-            img = remove_white_sun(img)
-        simplified = simplify_colors(img)
-        counts = counts + color_counts(simplified)
-        Image.fromarray(simplified).save('greenmask/greenmask' + extract_timestamp(file) + '.png')
-    return (counts / counts.sum())
-
-
-def separate_stamps(stamps):
-    random.shuffle(stamps)
-    test = stamps[0:int(len(stamps)*0.2)]
-    valid = stamps[int(len(stamps)*0.2):int(len(stamps)*0.36)]
-    train = stamps[int(len(stamps)*0.36):]
-    return test, valid, train
-
-
 def separate_data():
+    """Saves pickled lists of timestamps to test.stamps, valid.stamps, and
+    train.stamps."""
     stamps = [int(extract_timestamp(f)) for f in os.listdir('simpleimage/')]
     test, valid, train = separate_stamps(stamps)
     with open('test.stamps', 'wb') as f:
@@ -263,31 +147,107 @@ def separate_data():
         pickle.dump(train, f)
     return test, valid, train
 
+def separate_stamps(stamps):
+    """Shuffles stamps and returns three lists: 20% of the stamps for
+    testing, 16% for validation, and the rest for training."""
+    random.shuffle(stamps)
+    test = stamps[0:int(len(stamps)*0.2)]
+    valid = stamps[int(len(stamps)*0.2):int(len(stamps)*0.36)]
+    train = stamps[int(len(stamps)*0.36):]
+    return test, valid, train
+
+def simplify_all_names():
+    """Simplifies all of the filenames in skyimage/ and cldmask/."""
+    for dir in ('skyimage/', 'cldmask/'):
+        for f in os.listdir(dir):
+            os.rename(dir + f, dir + simplify_name(f))
+
+def simplify_all_images():
+    """Crops the images in skyimage/ down to 480x480, writes those to
+    simpleimage/, and returns the number of images cropped."""
+    counts = 0
+    for file in os.listdir('skyimage/'):
+        if file[0] != '.':
+            img = misc.imread('skyimage/' + file)
+            cropped = crop_image(img)
+            counts = counts + 1
+            Image.fromarray(cropped).save('simpleimage/simpleimage' +
+                           extract_timestamp(file) + '.jpg')
+    return counts
+
+def simplify_all_masks():
+    """Writes similified versions of all images in cldmask to simplemask.
+    Returns an array of relative frequencies of WHITE, BLUE, GRAY, BLACK, and
+    GREEN."""
+    counts = np.zeros(5, dtype=np.int)
+    for file in os.listdir('cldmask/'):
+        img = misc.imread('cldmask/' + file)
+        img = crop_image(img)
+        print('About to remove sun from ' + file)
+        if (img == YELLOW).all(axis=2).any():
+            print('Removing yellow sun')
+            img[(img == YELLOW).all(axis=2)] = BLACK
+        else:
+            print('Removing white sun')
+            img = remove_white_sun(img)
+        counts = counts + count_colors(img)
+        Image.fromarray(img).save('simplemask/simplemask' + extract_timestamp(file) + '.png')
+    return (counts / counts.sum())
+
+def simplify_name(filename):
+    """Accepts an arm.gov filename and returns a shorter, simpler version."""
+    return filename[6:filename.index('C1')] + filename[-18:]
+
+def test_remove_white_sun():
+    """For manually (visually) verifying that remove_white_sun works."""
+    img = misc.imread('data/cldmask/cldmask20160414174600.png')
+    img = remove_white_sun(img)
+    print(type(img))
+    img = Image.fromarray(img.astype('uint8'))
+    img.show()
+    return img
+
+def unpack_all_tars():
+    """Unpacks all available .tar files into the appropriate directories."""
+    for f in os.listdir('./'):
+        if f.endswith('.tar'):
+            if 'skyimage' in f:
+                unpack_tar(f, 'skyimage/')
+            elif 'cldmask' in f:
+                unpack_tar(f, 'cldmask/')
+
+def unpack_tar(file, dir):
+    """Given a .tar file, moves it to dir and unpacks it."""
+    g = dir + file
+    os.rename(file, g)
+    tar = tarfile.open(g)
+    tar.extractall(path=dir)
+    tar.close()
+
 
 if __name__ == '__main__':
     before = os.getcwd()
     os.chdir('data')
-#    print('Creating directories')
-#    create_dirs()
+    print('Creating directories')
+    create_dirs()
 #    print('Unpacking tars')
 #    unpack_all_tars()
 #    print('Simplifying names')
 #    simplify_all_names()
 #    print('Removing images without masks')
-#    remove_images_without_matching_masks()
+#    delete_images_without_matching_masks()
 #    print('Simplifying images')
-#    print(str(simplify_images()) + ' images processed')
+#    print(str(simplify_all_images()) + ' images processed')
     print('Simplifying masks')
-    print('[White, Blue, Gray, Black, Green] = ' + str(simplify_masks()))
-#    print('Saving non-sky masks')
-#    #save_non_sky_masks()
+    print('[White, Blue, Gray, Black, Green] = ' + str(simplify_all_masks()))
 #    print('Separating data')
 #    test, valid, train = separate_data()
 #    print(str(len(test)) + ' test cases; ' +
 #          str(len(valid)) + ' validation cases; ' +
 #          str(len(train)) + ' training cases.')
-#    make_always_black_mask()
-#    print('Making always green mask')
-#    make_always_green_mask()
+    print('Creating always-black mask.')
+    create_constant_mask(BLACK, 'always_black_mask.png')
+    print('Creating always-green mask.')
+    create_constant_mask(GREEN, 'always_green_mask.png')
     os.chdir(before)
     print('Done')
