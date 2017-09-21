@@ -55,12 +55,12 @@ GRAY = np.array([192, 192, 192])
 BLACK = np.array([0, 0, 0])
 GREEN = np.array([0, 255, 0])
 YELLOW = np.array([255, 255, 0])
+COLORS = (WHITE, BLUE, GRAY, BLACK, GREEN)
 
 def count_colors(img):
     """Returns an array of the number of WHITE, BLUE, GRAY, BLACK, and
     GREEN pixels in img."""
-    colors = (WHITE, BLUE, GRAY, BLACK, GREEN)
-    counts = [(img == color).all(axis=2).sum() for color in colors]
+    counts = [(img == color).all(axis=2).sum() for color in COLORS]
     return np.array(counts)
 
 def create_constant_mask(color, filename):

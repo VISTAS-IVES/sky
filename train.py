@@ -12,71 +12,37 @@ Created on Mon May 22 10:20:00 2017
 
 import numpy as np
 from scipy import misc
-from datetime import datetime
 import tensorflow as tf
 import sys
 import os
 import math
 import time
-import random
 import pickle
 import subprocess
-import tensorflow.contrib.slim as slim
-from math import sqrt
-from PIL import Image
+from preprocess import WHITE, BLUE, GRAY, BLACK, GREEN, COLORS
 
-# Define colors
-BLACK = np.array([0, 0, 0])
-BLUE = np.array([0, 0, 255])
-WHITE = np.array([255, 255, 255])
-GRAY = np.array([192, 192, 192])
-GREEN = np.array([0, 255, 0])
-
-# Distances from center of an image
+# Training parameters
 BATCH_SIZE = 5
 LEARNING_RATE = 0.0001
 
 def check_for_commit():
+    """Raises an exception if the git state is not clean. This ensures that
+    any experiment is run from code in one specific commit."""
     label = subprocess.check_output(["git", "status", "--untracked-files=no", "--porcelain"])
-    if (0 != (str(label).count('\\n'))):
+    if (str(label).count('\\n') != 0):
         raise Exception('Not in clean git state\n')
 
-def save_params(job_number, learning_rate, layer_info, out_dir):
-    F = open(out_dir + 'parameters.txt',"w+")
-    F.write("Job number:\t" + str(job_number) + "\n")
-    F.write("Learning rate:\t" + str(learning_rate) + "\n")
-    F.write("Layer info:\t" + ' '.join(layer_info) + "\n")
-    label = subprocess.check_output(["git", "rev-parse", "HEAD"])
-    F.write("Git commit:\t" + str(label)[2:-3:] + "\n")
-    F.close()
-
-def scale(img):
-    for r in range(480):
-        for c in range(480):
-            img[r, c] = img[r, c] / 255.0
-    return img
-
-
-def mask_to_one_hot(img):
-    """Modifies (and returns) img to have a one-hot vector for each
-    pixel."""
-    img[(img == WHITE).all(axis=2)] = np.array([1, 0, 0, 0])
-    img[(img == BLUE).all(axis=2)] =  np.array([0, 1, 0, 0])
-    img[(img == GRAY).all(axis=2)] =  np.array([0, 0, 1, 0])
-    img[(img == BLACK).all(axis=2)] = np.array([0, 0, 0, 1])
-    
-    return img
-
-
-def mask_to_index(img):
-    """Returns a new version of img with an index (expected color)
-    for each pixel."""
-    result = np.ndarray(shape=[img.shape[0], img.shape[1]])
-    result[(img == WHITE).all(axis=2)] = 0
-    result[(img == BLUE).all(axis=2)] = 1
-    result[(img == GRAY).all(axis=2)] = 2
-    result[(img == BLACK).all(axis=2)] = 3
-    result[(img == GREEN).all(axis=2)] = 4
+def color_mask(img, i):
+    """Takes a boolean mask and returns an image of one-hot vectors.
+    Each vector is all zeroes, except that the ith element of pixels that
+    are not BLUE in img is 1e7. This results in a "mask" that can be
+    added to the output of a network layer, overwhelming that layer's
+    normal output to dominate softmax."""
+    r, c = img.shape[:-1]
+    bool_mask = np.zeros((r, c), dtype=bool)
+    bool_mask[(img != BLUE).any(axis=2)] = True
+    result = np.zeros((r, c, 5), dtype=np.float32)
+    result[bool_mask, i] = 1e7
     return result
 
 
@@ -89,33 +55,47 @@ def get_inputs(stamps):
         inputs[i] = img
     return inputs
 
-
 def mask_layer(last_layer, b_mask, g_mask):
+    """Returns a TensorFlow layer that adds last_layer, b_mask, and g_mask.
+    Since these masks contain large values at pixels where the correct
+    answer is always black or green (respectively), the output of this layer
+    has those pixels colored correcly."""
     btf_mask = tf.constant(b_mask)
     gtf_mask = tf.constant(g_mask)
     return tf.add(gtf_mask, tf.add(btf_mask, last_layer))
 
-def make_b_mask_boolean(img):
-    """Takes a black/non-black image and return a corresponding True/False mask."""
-    black_mask = np.zeros((480, 480), dtype=bool)
-    black_mask[(img != BLUE).any(axis=2)] = True
-    return black_mask
+def mask_to_index(img):
+    """Returns a new version of img with an index (in COLORS)
+    for each pixel."""
+    result = np.ndarray(shape=[img.shape[0], img.shape[1]])
+    for i in range(len(COLORS)):
+        result[(img == COLORS[i]).all(axis=2)] = i
+    return result
+
+def save_params(job_number, learning_rate, layer_info, out_dir):
+    """Write information about this experiment to a file parameters.txt in
+    out_dir."""
+    F = open(out_dir + 'parameters.txt', "w+")
+    F.write("Job number:\t" + str(job_number) + "\n")
+    F.write("Learning rate:\t" + str(learning_rate) + "\n")
+    F.write("Layer info:\t" + ' '.join(layer_info) + "\n")
+    label = subprocess.check_output(["git", "rev-parse", "HEAD"])
+    F.write("Git commit:\t" + str(label)[2:-3:] + "\n")
+    F.close()
 
 
-def give_b_mask_black_values(bool_mask):
-    """Takes a boolean mask and returns a 3-channel image with [0, 0, 1e7]
-    where the mask is True, [0, 0, 0] elsewhere."""
-    black_mask = np.zeros((480, 480, 5), dtype=np.float32)
-    black_mask[bool_mask] = [0.0, 0.0, 0.0, 10000000.0, 0]
-    return black_mask
 
 
-def give_g_mask_green_values(bool_mask):
-    """Takes a boolean mask and returns a 3-channel image with [0, 0, 1e7]
-    where the mask is True, [0, 0, 0] elsewhere."""
-    black_mask = np.zeros((480, 480, 5), dtype=np.float32)
-    black_mask[bool_mask] = [0.0, 0.0, 0.0, 0.0, 10000000.0]
-    return black_mask
+
+
+
+
+
+
+
+
+
+
 
 
 def get_masks(stamps):
@@ -258,11 +238,8 @@ def get_name_oper(layer):
 def build_net(layer_info, learning_rate=0.0001):
     print("Building network")
     tf.reset_default_graph()
-    bool_mask = make_b_mask_boolean(misc.imread('data/b_mask.png'))    
-    b_mask = give_b_mask_black_values(bool_mask)
-    
-    bool_mask = make_b_mask_boolean(misc.imread('data/g_mask.png'))
-    g_mask = give_g_mask_green_values(bool_mask)
+    b_mask = color_mask(misc.imread('data/b_mask.png'), COLORS.index(BLACK))
+    g_mask = color_mask(misc.imread('data/g_mask.png'), COLORS.index(GREEN))
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
     num_layers = len(layer_info)
     table, last_name = parse_layer_info(layer_info)
