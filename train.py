@@ -19,16 +19,62 @@ import math
 import time
 import pickle
 import subprocess
-from preprocess import WHITE, BLUE, GRAY, BLACK, GREEN, COLORS
+from preprocess import BLUE, BLACK, GREEN, COLORS
 
 # Training parameters
 BATCH_SIZE = 5
 LEARNING_RATE = 0.0001
+TRAINING_STEPS = 10
+
+def build_net(layer_info):
+    """Builds a network given command-line layer info."""
+    print("Building network")
+    tf.reset_default_graph()
+    b_mask = color_mask(misc.imread('data/b_mask.png'), COLORS.index(BLACK))
+    g_mask = color_mask(misc.imread('data/g_mask.png'), COLORS.index(GREEN))
+    x = tf.placeholder(tf.float32, [None, 480, 480, 3])
+    num_layers = len(layer_info)
+    table, last_name = parse_layer_info(layer_info)
+    h = {}
+    h["in"] = x
+    for n in range(0, num_layers-1):
+        name, oper = get_name_oper(layer_info[n])
+        if (oper == 'conv'):
+            h[name] = convo_layer(table[name]["ins"],
+                                  table[name]["outs"],
+                                  table[name]["kernel"],
+                                  h[table[name]["prev"]],
+                                  table[name]["tf_name"])
+        if (oper == 'maxpool'):
+            h[name] = max_pool_layer(h[table[name]["prev"]],
+                                     table[name]["pool_width"],
+                                     table[name]["pool_height"],
+                                     name)
+        if (oper == 'concat'):
+                h[name] = tf.concat([h[table[name]["prev_1"]],
+                                     h[table[name]["prev_2"]]], 3)
+    h[last_name] = convo_layer(table[last_name]["ins"],
+                               table[last_name]["outs"],
+                               table[last_name]["kernel"],
+                               h[table[last_name]["prev"]],
+                               table[last_name]["tf_name"], False)
+    m = mask_layer(h[last_name], b_mask, g_mask)
+    y = tf.reshape(m, [-1, 5])
+    y_ = tf.placeholder(tf.int64, [None])
+    cross_entropy = tf.reduce_mean(
+        tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))
+    train_step = tf.train.AdamOptimizer(LEARNING_RATE).minimize(cross_entropy)
+    correct_prediction = tf.equal(tf.argmax(y, 1), y_)
+    saver = tf.train.Saver()
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    init = tf.global_variables_initializer()    
+    return train_step, accuracy, saver, init, x, y, y_, cross_entropy
 
 def check_for_commit():
     """Raises an exception if the git state is not clean. This ensures that
     any experiment is run from code in one specific commit."""
-    label = subprocess.check_output(["git", "status", "--untracked-files=no", "--porcelain"])
+    label = subprocess.check_output(["git", "status", "--untracked-files=no",
+                                     "--porcelain"])
     if (str(label).count('\\n') != 0):
         raise Exception('Not in clean git state\n')
 
@@ -45,24 +91,75 @@ def color_mask(img, i):
     result[bool_mask, i] = 1e7
     return result
 
+def conv2d(x, W, layer_num):
+    """Returns a 2D convolutional layer with weights W. (Biases are added
+    later.)"""
+    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME',
+                        name = 'conv'+str(layer_num))
 
-def get_inputs(stamps):
+def convo_layer(num_in, num_out, width, prev, name, relu=True):
+    """Returns a TensorFlow convolutional layer with the specified width,
+    taking input from prev."""
+    num_in, num_out, width = int(num_in), int(num_out), int(width)
+    with tf.variable_scope(name):
+        initial = tf.truncated_normal([width, width, num_in, num_out],
+                                      stddev=(2 / math.sqrt(width * width * num_in)))
+        W = tf.get_variable("weights", initializer=initial)
+        initial = tf.constant(0.1, shape=[num_out])
+        b = tf.Variable(initial, name='biases')
+        if relu:
+            h = tf.nn.relu(conv2d(prev, W, name) + b)
+        else:
+            h = conv2d(prev, W, name) + b   
+    return h
+
+def get_name_oper(layer):
+    """Returns the name and operator from a command-line layer
+    specification."""
+    hold = layer.split(":")
+    name = hold[0]
+    oper = hold[1].split("-")[0]
+    return name, oper
+
+def load_inputs(stamps):
     """Returns a tensor of images specified by stamps. Dimensions are: image,
     row, column, color."""
     inputs = np.empty((len(stamps), 480, 480, 3))
     for i, s in enumerate(stamps):
-        img = np.array(misc.imread('data/simpleimage/simpleimage' + str(s) + '.jpg'))
-        inputs[i] = img
+        inputs[i] = np.array(misc.imread('data/simpleimage/simpleimage' +
+                             str(s) + '.jpg'))
     return inputs
+
+def load_masks(stamps):
+    """Returns a tensor of correct label categories (i.e., indices into
+    preprocess.COLORS) for each pixel in each image specified by stamps.
+    Dimensons are image, row, column. The tensor has been flattened into a
+    single vector."""
+    masks = np.empty((len(stamps), 480, 480))
+    for i, s in enumerate(stamps):
+        masks[i] = mask_to_index(np.array(
+                   misc.imread('data/simplemask/simplemask'
+                               + str(s) + '.png')))
+    return masks.reshape((-1))
+
+def load_validation_batch(n):
+    """Returns the inputs and correct outputs for the first n validation
+    examples."""
+    with open('data/valid.stamps', 'rb') as f:
+        valid_stamps = pickle.load(f)
+    valid_stamps = valid_stamps[:n]
+    valid_inputs = load_inputs(valid_stamps)
+    valid_correct = load_masks(valid_stamps)
+    return valid_inputs, valid_correct
 
 def mask_layer(last_layer, b_mask, g_mask):
     """Returns a TensorFlow layer that adds last_layer, b_mask, and g_mask.
     Since these masks contain large values at pixels where the correct
     answer is always black or green (respectively), the output of this layer
     has those pixels colored correcly."""
-    btf_mask = tf.constant(b_mask)
-    gtf_mask = tf.constant(g_mask)
-    return tf.add(gtf_mask, tf.add(btf_mask, last_layer))
+    black = tf.constant(b_mask)
+    green = tf.constant(g_mask)
+    return tf.add(green, tf.add(black, last_layer))
 
 def mask_to_index(img):
     """Returns a new version of img with an index (in COLORS)
@@ -71,6 +168,65 @@ def mask_to_index(img):
     for i in range(len(COLORS)):
         result[(img == COLORS[i]).all(axis=2)] = i
     return result
+
+def max_pool_layer(prev, width, height, name):
+    """Returns a TensorFlow max_pool layers of the specified width and height,
+    taking input from prev."""
+    width, height = int(width), int(height)
+    return tf.nn.max_pool(prev,[1, width, height, 1], strides=[1, 1, 1, 1],
+                          padding='SAME', name=name)
+
+def parse_layer_info(layer_info):
+    """Parses layer info from the command line. layer_info is a list of
+    strings like 'f:conv-3-32-e', which says that layer f is a convolutional
+    layer with a 3x3 kernel and 32 output channels taking input from layer
+    e. Returns two values: a dictionary associating layer names with their
+    information and the name of the last layer."""
+    # The input "layer" has 3 output channels (rgb)
+    table = {'in':{'outs':3}}
+    count = 0
+    name = ''
+    for layer in layer_info:
+        name, oper = get_name_oper(layer)
+        args = layer.split(':')[1].split('-')[1:]
+        info = {}
+        # Convolutional layer
+        # name:conv-width-outs-prev
+        if oper == 'conv' :
+            kernel = args[0]
+            outs = args[1]
+            tf_name = name
+            if count == 0:
+                ins = 3
+                # First hidden layer layer is always named hidden0 so that
+                # show_kernels can find it.
+                tf_name = "hidden0"
+            else:
+                ins = table[args[2]]['outs']
+            prev_name = args[2]    
+            info = {"outs":outs, "ins":ins, "kernel":kernel,
+                    "prev":prev_name, "tf_name":tf_name}
+        # Max-pool layer
+        # name:maxpool-width-height-prev
+        if oper == 'maxpool' :
+            pool_width = args[0]
+            pool_height = args[1]
+            outs = (table[args[2]])["outs"]
+            prev_name = args[2]
+            info = {"outs":outs, "pool_width":pool_width,
+                    "pool_height":pool_height, "prev":prev_name}
+        # Concatenation layer
+        # name:concat-prev1-prev2
+        if oper == 'concat' :
+            outs = str(int(table[args[0]]["outs"]) +
+                       int(table[args[1]]["outs"]))
+            prev_1 = args[0]
+            prev_2 = args[1]
+            info = {"outs":outs, "prev_1":prev_1, "prev_2":prev_2}
+        # Update table so that it can be referred to by later layers
+        table[name] = info
+        count += 1 
+    return table, name
 
 def save_params(job_number, learning_rate, layer_info, out_dir):
     """Write information about this experiment to a file parameters.txt in
@@ -83,196 +239,9 @@ def save_params(job_number, learning_rate, layer_info, out_dir):
     F.write("Git commit:\t" + str(label)[2:-3:] + "\n")
     F.close()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def get_masks(stamps):
-    """Returns a tensor of correct label categories specified by stamps.
-    Dimensons are image, row, column. The tensor has been flattened into a
-    single vector."""
-    masks = np.empty((len(stamps), 480, 480))
-    for i, s in enumerate(stamps):
-        masks[i] = mask_to_index(np.array(misc.imread('data/greenmask/greenmask' + str(s) + '.png')))
-    return masks.reshape((-1))
-
-def format_nsmask(img):
-    """Takes a boolean mask and returns a 1-channel image with [0, 0, 1e7]
-    where the mask is True, [0, 0, 0] elsewhere."""
-    ns_mask = np.full((480, 480, 1), -1000000.0, dtype=np.float32)
-    ns_mask[(img == BLACK).all(axis=2)] = [10000000.0]
-    return ns_mask
-
-def get_nsmasks(stamps):
-    masks = np.empty((len(stamps), 480, 480, 1))
-    for i, s in enumerate(stamps):
-        masks[i] = format_nsmask((np.array(misc.imread('data/nsmask/nsmask' + str(s) + '.png'))))
-    return masks
-
-def weight_variable(shape, n_inputs, num):
-    initial = tf.truncated_normal(shape, stddev=(2 / math.sqrt(n_inputs)))
-    with tf.name_scope('conv' + str(num)):
-        W = tf.Variable(initial, name = 'weights')
-    return W
-
-
-def bias_variable(shape):
-    initial = tf.constant(0.1, shape=shape)
-    return tf.Variable(initial)
-
-
-def conv2d(x, W, num):
-    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME', name = 'conv'+str(num))
-
-
-def load_validation_batch():
-    with open('data/valid.stamps', 'rb') as f:
-        valid_stamps = pickle.load(f)
-    valid_stamps = valid_stamps[:BATCH_SIZE]
-    valid_inputs = get_inputs(valid_stamps)
-    valid_correct = get_masks(valid_stamps)
-    valid_ns_vals = get_nsmasks(valid_stamps)
-    return valid_inputs, valid_correct, valid_ns_vals
-
-
-def max_out(inputs, num_units, axis=None):
-    # This function was taken from the following link
-    # https://github.com/philipperemy/tensorflow-maxout
-    # For information about licensing see the LICENSE file
-    shape = inputs.get_shape().as_list()
-    if shape[0] is None:
-        shape[0] = -1
-    if axis is None:  # Assume that channel is the last dimension
-        axis = -1
-    num_channels = shape[axis]
-    if num_channels % num_units:
-        raise ValueError('number of features({}) is not ' +
-                         'a multiple of num_units({})'.format(num_channels, num_units))
-    shape[axis] = num_units
-    shape += [num_channels // num_units]
-    outputs = tf.reduce_max(tf.reshape(inputs, shape), -1, keep_dims=False)
-    return outputs
-
-
-def max_pool_layer(prev, pool_width, pool_height, name):
-    pool_width, pool_height = int(pool_width), int(pool_height)
-    return tf.nn.max_pool(prev,[1, pool_width, pool_height, 1],strides=[1, 1, 1, 1], padding='SAME', name = name)
-
-def convo_layer(num_in, num_out, width, prev, name, relu=True):
-    num_in, num_out, width = int(num_in), int(num_out), int(width)
-    with tf.variable_scope(name):
-        initial = tf.truncated_normal([width, width, num_in, num_out], stddev=(2 / math.sqrt(width * width * num_in)))
-        W = tf.get_variable("weights", initializer = initial)
-        initial = tf.constant(0.1, shape=[num_out])
-        b = tf.Variable(initial, name='biases')
-        if relu:
-            h = tf.nn.relu(conv2d(prev, W, name) + b)
-        else:
-            h = conv2d(prev, W, name) + b   
-    return h
-
-
-#def mask_layer(last_layer, ns_vals):
-#    #ns_vals = tf.constant(ns_vals)
-#    return tf.concat([last_layer, ns_vals], 3)
-
-def parse_layer_info(layer_info):
-    table = {'in':{'outs':3}}
-    count = 0
-    name = ""
-    for layer in layer_info:
-        hold1 = layer.split(":")
-        name = hold1[0]
-        hold2 = hold1[1].split("-")
-        oper = hold2[0]
-        args = hold2[1:]
-        info = {}
-        
-        if oper == 'conv' :
-            kernel = args[0]
-            outs = args[1]
-            tf_name = name
-            if count == 0:
-                ins = 3
-                tf_name = "hidden0" # First hidden layer always has this specific name so show_kernels can find it
-            else:
-                ins = table[args[2]]['outs']
-            prev_name = args[2]    
-            info = {"outs":outs, "ins":ins, "kernel":kernel, "prev":prev_name, "tf_name":tf_name}
-            
-        if oper == 'maxpool' :
-            pool_width = args[0]
-            pool_height = args[1]
-            outs = (table[args[2]])["outs"]
-            prev_name = args[2]
-            info = {"outs":outs, "pool_width":pool_width, "pool_height":pool_height, "prev":prev_name}
-        
-        if oper == 'concat' :
-            outs = str(int(table[args[0]]["outs"]) + int(table[args[1]]["outs"]))
-            prev_1 = args[0]
-            prev_2 = args[1]
-            info = {"outs":outs, "prev_1":prev_1, "prev_2":prev_2}
-            
-        table[name] = info
-        count += 1 
-    return table, name
-
-def get_name_oper(layer):
-    hold = layer.split(":")
-    name = hold[0]
-    oper = hold[1].split("-")[0]
-    return name, oper
-    
-
-def build_net(layer_info, learning_rate=0.0001):
-    print("Building network")
-    tf.reset_default_graph()
-    b_mask = color_mask(misc.imread('data/b_mask.png'), COLORS.index(BLACK))
-    g_mask = color_mask(misc.imread('data/g_mask.png'), COLORS.index(GREEN))
-    x = tf.placeholder(tf.float32, [None, 480, 480, 3])
-    num_layers = len(layer_info)
-    table, last_name = parse_layer_info(layer_info)
-    h = {}
-    h["in"] = x
-    for n in range(0, num_layers-1):
-        # make first layer
-        name, oper = get_name_oper(layer_info[n])
-        if (oper == 'conv'):
-            h[name] = convo_layer(table[name]["ins"], table[name]["outs"], table[name]["kernel"], h[table[name]["prev"]], table[name]["tf_name"])
-            
-        if (oper == 'maxpool'):
-            h[name] = max_pool_layer(h[table[name]["prev"]], table[name]["pool_width"], table[name]["pool_height"], name)
-            
-        if (oper == 'concat'):
-                h[name] = tf.concat([h[table[name]["prev_1"]], h[table[name]["prev_2"]]], 3)
- 
-    h[last_name] = convo_layer(table[last_name]["ins"], table[last_name]["outs"], table[last_name]["kernel"], h[table[last_name]["prev"]], table[last_name]["tf_name"], False)
-    m = mask_layer(h[last_name], b_mask, g_mask)
-    y = tf.reshape(m, [-1, 5])
-    y_ = tf.placeholder(tf.int64, [None])
-    cross_entropy = tf.reduce_mean(
-        tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))
-    train_step = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
-    correct_prediction = tf.equal(tf.argmax(y, 1), y_)
-    saver = tf.train.Saver()
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    init = tf.global_variables_initializer()    
-    return train_step, accuracy, saver, init, x, y, y_, cross_entropy
-
-
 def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
-              valid_inputs, valid_correct, valid_ns_vals, result_dir):
+              valid_inputs, valid_correct, result_dir):
+    """Trains the network."""
     print("Training network")
     start = time.time()
     # Get image and make the mask into a one-hotted mask
@@ -283,46 +252,38 @@ def train_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy,
             init.run()
             print('Step\tTrain\tValid', file=f, flush=True)
             j = 0
-            for i in range(1, 10 + 1):
+            for i in range(1, TRAINING_STEPS + 1):
                 j += 1
                 if (j*BATCH_SIZE >= len(train_stamps)):
                     j = 1
-                #batch = random.sample(train_stamps, BATCH_SIZE)
-                batch = train_stamps[(j-1)*BATCH_SIZE : j*BATCH_SIZE]
-                inputs = get_inputs(batch)
-                correct = get_masks(batch)
+                batch = train_stamps[(j-1) * BATCH_SIZE : j * BATCH_SIZE]
+                inputs = load_inputs(batch)
+                correct = load_masks(batch)
                 train_step.run(feed_dict={x: inputs, y_: correct})
                 if i % 10 == 0:
                     saver.save(sess, result_dir + 'weights', global_step=i)
-#                    train_accuracy = accuracy.eval(feed_dict={
-#                            x: inputs, y_: correct, ns: ns_vals})
-#                    valid_accuracy = accuracy.eval(feed_dict={
-#                            x: valid_inputs, y_: valid_correct, ns: valid_ns_vals})
                     train_accuracy = accuracy.eval(feed_dict={
                             x: inputs, y_: correct})
                     valid_accuracy = accuracy.eval(feed_dict={
                             x: valid_inputs, y_: valid_correct})
-
-                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy), file=f, flush=True)                             
-#                    print('{}\t{:1.5f}\t{:1.5f}'.format(i, train_accuracy, valid_accuracy))  
+                    print('{}\t{:1.5f}\t{:1.5f}'.format(i,
+                                                        train_accuracy,
+                                                        valid_accuracy),
+                          file=f,
+                          flush=True)                             
         stop = time.time()  
-        F = open(out_dir + 'parameters.txt',"a")
-        F.write("Elapsed time:\t" + str(stop - start) + " seconds\n")
+        F = open(out_dir + 'parameters.txt', 'a')
+        F.write('Elapsed time:\t' + str(stop - start) + ' seconds\n')
         F.close()
 
 
-
-
 if __name__ == '__main__':
-#    check_for_commit()
-#    tim = time.time()
-#    print(tim)
-#    job_number = str(tim)
+    check_for_commit()
     job_number = sys.argv[1]
     layer_info = sys.argv[2::]
-    layer_sizes_print = '_'.join(layer_info)
     out_dir = 'results/exp' + job_number + '/'
     os.makedirs(out_dir)
     save_params(job_number, LEARNING_RATE, layer_info, out_dir)
-    #layer_info = list(map(int, layer_info))
-    train_net(*build_net(layer_info, LEARNING_RATE), *load_validation_batch(), out_dir)
+    train_net(*build_net(layer_info, LEARNING_RATE),
+              *load_validation_batch(BATCH_SIZE),
+              out_dir)
