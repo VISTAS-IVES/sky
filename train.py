@@ -171,13 +171,17 @@ def load_masks(stamps):
 def load_validation_batch(n):
     """Returns the inputs and correct outputs for the first n validation
     examples."""
-    with open('data/valid.stamps', 'rb') as f:
-        valid_stamps = pickle.load(f)
-    valid_stamps = valid_stamps[:n]
+    valid_stamps = load_validation_stamps(n)
     valid_inputs = load_inputs(valid_stamps)
     valid_correct = load_masks(valid_stamps)
     return valid_inputs, valid_correct
 
+def load_validation_stamps(n):
+    """Reads the valid.stamps file in data and returns a list of the first
+    n stamps."""
+    with open('data/valid.stamps', 'rb') as f:
+        return pickle.load(f)[:n]
+    
 def mask_layer(last_layer, b_mask, g_mask):
     """Returns a TensorFlow layer that adds last_layer, b_mask, and g_mask.
     Since these masks contain large values at pixels where the correct
