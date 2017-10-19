@@ -238,8 +238,8 @@ if __name__ == '__main__':
 #    delete_images_without_matching_masks()
 #    print('Simplifying images')
 #    print(str(simplify_all_images()) + ' images processed')
-    print('Simplifying masks')
-    print('[White, Blue, Gray, Black, Green] = ' + str(simplify_all_masks()))
+#    print('Simplifying masks')
+#    print('[White, Blue, Gray, Black, Green] = ' + str(simplify_all_masks()))
 #    print('Separating data')
 #    test, valid, train = separate_data()
 #    print(str(len(test)) + ' test cases; ' +

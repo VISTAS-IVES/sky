@@ -1,8 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Trains the network.
+
 Command line arguments:
-job_number layer_size_1 ... layer_size_n
+job_number layer_1 ... layer_n
+
+Examples of layer specifications with explanations:
+
+b:conv-3-32-a
+
+Layer b is a convolutional layer with a 3x3 kernel and 32 output channels
+taking input from layer a. (The input "layer" is called "in" for this
+purpose.)
+
+b:maxpool-32-1-a
+Layer b is a max-pool layer with a 32x1 receptive field taking input from
+layer a.
+
+c:concat-a-b
+Layer c concatenates the outputs of layers a and b.
 
 Created on Mon May 22 10:20:00 2017
 
@@ -30,8 +47,10 @@ def build_net(layer_info):
     """Builds a network given command-line layer info."""
     print("Building network")
     tf.reset_default_graph()
-    b_mask = color_mask(misc.imread('data/b_mask.png'), COLORS.index(BLACK))
-    g_mask = color_mask(misc.imread('data/g_mask.png'), COLORS.index(GREEN))
+    b_mask = color_mask(misc.imread('data/always_black_mask.png'),
+                        index_of(BLACK, COLORS))
+    g_mask = color_mask(misc.imread('data/always_green_mask.png'),
+                        index_of(GREEN, COLORS))
     x = tf.placeholder(tf.float32, [None, 480, 480, 3])
     num_layers = len(layer_info)
     table, last_name = parse_layer_info(layer_info)
@@ -121,6 +140,13 @@ def get_name_oper(layer):
     oper = hold[1].split("-")[0]
     return name, oper
 
+def index_of(x, sequence):
+    """Returns the index of x in sequence. We can't figure out how to do this
+    more directly; the standard index method doesn't work when x is a numpy
+    array."""
+    eq = list((item == x).all() for item in sequence)
+    return eq.index(True)
+    
 def load_inputs(stamps):
     """Returns a tensor of images specified by stamps. Dimensions are: image,
     row, column, color."""
