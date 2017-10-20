@@ -144,7 +144,9 @@ def index_of(x, sequence):
     """Returns the index of x in sequence. We can't figure out how to do this
     more directly; the standard index method doesn't work when x is a numpy
     array."""
-    return [(item == x).all() for item in sequence].index(True)
+    for i, item in enumerate(sequence):
+        if (item == x).all():
+            return i
     
 def load_inputs(stamps):
     """Returns a tensor of images specified by stamps. Dimensions are: image,
