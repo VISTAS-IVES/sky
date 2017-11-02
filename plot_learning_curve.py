@@ -17,7 +17,6 @@ Created on Fri Jun  9 09:30:05 2017
 import matplotlib.pyplot as plt
 import sys
 
-
 file = dir_name = "results/" + sys.argv[1] + "/output.txt"
 
 with open(file) as f:
