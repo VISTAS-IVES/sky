@@ -85,7 +85,7 @@ def show_sky_images(timestamps):
 
 if __name__ == '__main__':
     timestamps = load_validation_stamps(BATCH_SIZE)
-    dir_name = "results/exp" + sys.argv[1] + "/"
+    dir_name = "results/" + sys.argv[1] + "/"
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)
     layer_info = args['Layer info'].split()

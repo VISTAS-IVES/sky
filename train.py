@@ -40,7 +40,7 @@ from preprocess import BLUE, BLACK, GREEN, COLORS
 # Training parameters
 BATCH_SIZE = 5
 LEARNING_RATE = 0.0001
-TRAINING_STEPS = 10
+TRAINING_STEPS = 100
 
 def build_net(layer_info):
     """Builds a network given command-line layer info."""
@@ -310,7 +310,7 @@ if __name__ == '__main__':
     check_for_commit()
     job_number = sys.argv[1]
     layer_info = sys.argv[2::]
-    out_dir = 'results/exp' + job_number + '/'
+    out_dir = 'results/' + job_number + '/'
     os.makedirs(out_dir)
     save_params(job_number, layer_info, out_dir)
     train_net(*build_net(layer_info),

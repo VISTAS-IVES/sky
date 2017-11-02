@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Plots a learning curve showing the network's performance on training and
+validation sets over the course of training.
+
+Command line arguments:
+dir
+
+dir is the results directory where the network is stored.
+
 Created on Fri Jun  9 09:30:05 2017
 
 @author: drake
