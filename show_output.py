@@ -77,20 +77,21 @@ def read_parameters(directory):
 def show_comparison_images(outputs, targets):
     """Shows images of where outputs differ from targets, color-coded by how
     they agree or disagree. Destructively modifies targets."""
-    targets[np.logical_and((outputs == BLUE).all(axis=2),
-                           (targets == GRAY).all(axis=2))] = BLUE_FOR_GRAY
-    targets[np.logical_and((outputs == BLUE).all(axis=2),
-                           (targets == WHITE).all(axis=2))] = BLUE_FOR_WHITE
-    targets[np.logical_and((outputs == GRAY).all(axis=2),
-                           (targets == BLUE).all(axis=2))] = GRAY_FOR_BLUE
-    targets[np.logical_and((outputs == GRAY).all(axis=2),
-                           (targets == WHITE).all(axis=2))] = GRAY_FOR_WHITE
-    targets[np.logical_and((outputs == WHITE).all(axis=2),
-                           (targets == BLUE).all(axis=2))] = WHITE_FOR_BLUE
-    targets[np.logical_and((outputs == WHITE).all(axis=2),
-                           (targets == GRAY).all(axis=2))] = WHITE_FOR_GRAY
-    disp = Image.fromarray(targets.astype('uint8'))
-    disp.show()
+    targets[np.logical_and((outputs == BLUE).all(axis=3),
+                           (targets == GRAY).all(axis=3))] = BLUE_FOR_GRAY
+    targets[np.logical_and((outputs == BLUE).all(axis=3),
+                           (targets == WHITE).all(axis=3))] = BLUE_FOR_WHITE
+    targets[np.logical_and((outputs == GRAY).all(axis=3),
+                           (targets == BLUE).all(axis=3))] = GRAY_FOR_BLUE
+    targets[np.logical_and((outputs == GRAY).all(axis=3),
+                           (targets == WHITE).all(axis=3))] = GRAY_FOR_WHITE
+    targets[np.logical_and((outputs == WHITE).all(axis=3),
+                           (targets == BLUE).all(axis=3))] = WHITE_FOR_BLUE
+    targets[np.logical_and((outputs == WHITE).all(axis=3),
+                           (targets == GRAY).all(axis=3))] = WHITE_FOR_GRAY
+    for i in range(targets.shape[0]):
+        disp = Image.fromarray(targets[i].astype('uint8'))
+        disp.show()
 
 def show_output(accuracy, saver, x, y, y_, result_dir, num_iterations, time,
              show_all):

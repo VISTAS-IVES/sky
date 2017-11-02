@@ -73,7 +73,7 @@ def run_stamps(saver, x, y, result_dir, iteration, stamps):
     (using saved weights for iteration) on them. Returns the output images."""
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(iteration))
-        inputs = get_inputs(stamps)
+        inputs = load_inputs(stamps)
         outputs = out_to_image(y.eval(feed_dict={x: inputs}))
         return outputs.reshape(-1, 480, 480, 3)
 
@@ -85,12 +85,13 @@ def show_sky_images(timestamps):
 
 if __name__ == '__main__':
     timestamps = load_validation_stamps(BATCH_SIZE)
-    dir_name = "results/" + sys.argv[1] + "/"
+    dir_name = "results/exp" + sys.argv[1] + "/"
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)
     layer_info = args['Layer info'].split()
     worst_timestamps = find_worst_results(5, timestamps, dir_name, step_version, layer_info)
     print("Worst timestamps:\t" + str(worst_timestamps))
-    outputs = run_stamps(*build_net(layer_info, 0), dir_name, step_version, worst_timestamps)
+    _, _, saver, _, x, y, _, _ = build_net(layer_info)
+    outputs = run_stamps(saver, x, y, dir_name, step_version, worst_timestamps)
     targets = read_targets(worst_timestamps)
     show_comparison_images(outputs, targets)
