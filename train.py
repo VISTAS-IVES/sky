@@ -258,12 +258,11 @@ def parse_layer_info(layer_info):
         count += 1 
     return table, name
 
-def save_params(job_number, learning_rate, layer_info, out_dir):
+def save_params(job_number, layer_info, out_dir):
     """Write information about this experiment to a file parameters.txt in
     out_dir."""
     F = open(out_dir + 'parameters.txt', "w+")
     F.write("Job number:\t" + str(job_number) + "\n")
-    F.write("Learning rate:\t" + str(learning_rate) + "\n")
     F.write("Layer info:\t" + ' '.join(layer_info) + "\n")
     label = subprocess.check_output(["git", "rev-parse", "HEAD"])
     F.write("Git commit:\t" + str(label)[2:-3:] + "\n")
@@ -313,7 +312,7 @@ if __name__ == '__main__':
     layer_info = sys.argv[2::]
     out_dir = 'results/exp' + job_number + '/'
     os.makedirs(out_dir)
-    save_params(job_number, LEARNING_RATE, layer_info, out_dir)
-    train_net(*build_net(layer_info, LEARNING_RATE),
+    save_params(job_number, layer_info, out_dir)
+    train_net(*build_net(layer_info),
               *load_validation_batch(BATCH_SIZE),
               out_dir)
