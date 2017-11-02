@@ -15,7 +15,7 @@ Created on Thu Jun 15 15:32:13 2017
 @author: jeffmullins
 """
 
-from train import build_net, get_inputs, BATCH_SIZE, load_validation_stamps
+from train import build_net, load_inputs, BATCH_SIZE, load_validation_stamps
 from show_output import out_to_image, read_parameters, \
     read_last_iteration_number
 import numpy as np
@@ -29,6 +29,30 @@ from show_output import show_comparison_images
 def disagreement_rate(output, target):
     """Returns the proportion of pixels in output that disagree with target."""
     return np.sum((output != target).any(axis=2)) / (480 * 480)
+
+def find_worst_results(num_worst, time_stamps, directory, step_version, layer_info):
+    """Returns the the timestamps of the num_worst images for which the network
+    most disagrees with the target masks."""
+    _, _, saver, _, x, y, _, _ = build_net(layer_info)
+    with tf.Session() as sess:
+        saver.restore(sess, directory + 'weights-' + str(step_version))
+        time_stamps = load_validation_stamps(BATCH_SIZE)
+        rates = np.zeros(len(time_stamps))
+        for i, s in enumerate(time_stamps):
+            inputs = load_inputs([s])
+            result = out_to_image(y.eval(feed_dict={x: inputs}))
+            result = result.reshape(480, 480, 3)
+            mask = read_target(s)
+            rates[i] = disagreement_rate(result, mask)
+        # Display a graph of accuracies
+        plt.plot(np.take(rates * 100, np.flip((rates.argsort()), axis=0)))
+        plt.ylabel('Percent of Pixels Incorrect')
+        plt.xlabel('Image (sorted by accuracy)')
+        plt.show()
+        # Report the worst disagreement rates
+        indices = rates.argsort()[num_worst*-1:][::-1]
+        print('Worst results percentages:\t' + str(np.take(rates, indices)))
+    return np.take(time_stamps, indices)
 
 def read_target(timestamp):
     """Reads and returns the target mask corresponding to timestamps from
@@ -53,32 +77,6 @@ def run_stamps(saver, x, y, result_dir, iteration, stamps):
         outputs = out_to_image(y.eval(feed_dict={x: inputs}))
         return outputs.reshape(-1, 480, 480, 3)
 
-
-def find_worst_results(num_worst, time_stamps, directory, step_version, layer_info):
-    """Returns the the timestamps of the num_worst images for which the network
-    most disagrees with the target masks."""
-    _, _, saver, _, x, y, _, _ = build_net(layer_info)
-    with tf.Session() as sess:
-        saver.restore(sess, directory + 'weights-' + str(step_version))
-        time_stamps = load_validation_stamps(BATCH_SIZE)
-        rates = np.zeros(len(time_stamps))
-        for i, s in enumerate(time_stamps):
-            inputs = get_inputs([s])
-            result = out_to_image(y.eval(feed_dict={x: inputs}))
-            result = result.reshape(480, 480, 3)
-            mask = read_target(s)
-            rates[i] = disagreement_rate(result, mask)
-        # Display a graph of accuracies
-        plt.plot(np.take(rates * 100, np.flip((rates.argsort()), axis=0)))
-        plt.ylabel('Percent of Pixels Incorrect')
-        plt.xlabel('Image (sorted by accuracy)')
-        plt.show()
-        # Report the worst disagreement rates
-        indices = rates.argsort()[num_worst*-1:][::-1]
-        print('Worst results percentages:\t' + str(np.take(rates, indices)))
-    return np.take(time_stamps, indices)
-
-
 def show_sky_images(timestamps):
     """Shows the input images for timestamps."""
     for s in timestamps:
@@ -86,7 +84,7 @@ def show_sky_images(timestamps):
 
 
 if __name__ == '__main__':
-    timestamps = read_valid_stamps(BATCH_SIZE)
+    timestamps = load_validation_stamps(BATCH_SIZE)
     dir_name = "results/" + sys.argv[1] + "/"
     args = read_parameters(dir_name)
     step_version = read_last_iteration_number(dir_name)

@@ -9,7 +9,6 @@ job_number layer_1 ... layer_n
 Examples of layer specifications with explanations:
 
 b:conv-3-32-a
-
 Layer b is a convolutional layer with a 3x3 kernel and 32 output channels
 taking input from layer a. (The input "layer" is called "in" for this
 purpose.)
