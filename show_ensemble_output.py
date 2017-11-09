@@ -133,7 +133,7 @@ if __name__ == '__main__':
         args = read_parameters(dir_name)
         step_version = read_last_iteration_number(dir_name)
         layer_info = args['Layer info'].split()
-        onehot = load_net(*build_net(layer_info, 0), dir_name, step_version)
+        onehot = load_net(*build_net(layer_info), dir_name, step_version)
         counts += onehot
     # Now show the ensemble image
     img = out_to_image(counts)[0]
