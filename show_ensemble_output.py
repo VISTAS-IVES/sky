@@ -3,20 +3,20 @@
 
 """
 Command line arguments:
-directory_name
+directory_name ...
 
+(Supply several directory names; this program shows the result of an ensemble
+of the networks defined in those directories.)
 
 Created on Fri Jun  2 14:58:47 2017
 
 @author: drake
 """
 
-from train import build_net, get_inputs, get_masks, format_nsmask, get_nsmasks, BLACK
+from train import build_net, load_inputs, load_masks, BLACK
 import numpy as np
-import sys
 import tensorflow as tf
 from PIL import Image
-from scipy import misc
 import argparse
 
 TIME_STAMP = 20160414162830
@@ -93,9 +93,9 @@ def run_net(train_step, accuracy, saver, init, x, y, y_, cross_entropy, result_d
     """Loads and runs the most recent network from result_dir. Returns the input impage and the output one-hot mask."""
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(num_iterations))
-        inputs = get_inputs([TIME_STAMP])
+        inputs = load_inputs([TIME_STAMP])
         result = y.eval(feed_dict={x: inputs})
-        accuracy = accuracy.eval(feed_dict={x: inputs, y_: get_masks([TIME_STAMP])})
+        accuracy = accuracy.eval(feed_dict={x: inputs, y_: load_masks([TIME_STAMP])})
         print('Accuracy = ' + str(accuracy))
         return inputs, result
     
