@@ -24,7 +24,10 @@ from PIL import Image
 from scipy import misc
 import argparse
 
+# Time stamp of default image
 TIME_STAMP = 20160414162830
+
+# Don't show comparison images by default
 SHOW_ALL = False
 
 # BLUE_FOR_GRAY (for example) means our net gave blue when the target mask
@@ -95,11 +98,13 @@ def show_comparison_images(outputs, targets):
 
 def show_output(accuracy, saver, x, y, y_, result_dir, num_iterations, time,
              show_all):
-    """Loads the network and displays the output for the specified time."""
+    """Loads the network and displays the output for the specified time. Returns
+    the network output."""
     with tf.Session() as sess:
         saver.restore(sess, result_dir + 'weights-' + str(num_iterations))
         inputs = load_inputs([TIME_STAMP])
-        img = out_to_image(y.eval(feed_dict={x: inputs}))[0]
+        result = y.eval(feed_dict={x: inputs})
+        img = out_to_image(result)[0]
         if (show_all):
             mask = np.array(misc.imread('data/simplemask/simplemask' + str(time) + '.png'))
             Image.fromarray(inputs[0].astype('uint8')).show()
@@ -110,6 +115,7 @@ def show_output(accuracy, saver, x, y, y_, result_dir, num_iterations, time,
         img.save(result_dir + 'net-output.png')
         accuracy = accuracy.eval(feed_dict={x: inputs, y_: load_masks([time])})
         print('Accuracy = ' + str(accuracy))
+        return result
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
