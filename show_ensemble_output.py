@@ -141,7 +141,7 @@ if __name__ == '__main__':
     img.show()
     img.save('results/ensemble-output.png')
     # Determine final image accuracy
-    correctness = np.equal(np.argmax(counts, 1), get_masks([TIME_STAMP])).astype(float)
+    correctness = np.equal(np.argmax(counts, 1), load_masks([TIME_STAMP])).astype(float)
     print('Final accuracy: ' + str(correctness.mean()))
    
 
