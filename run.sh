@@ -9,4 +9,4 @@
 
 module load Python/intel-python3.5.2
 echo $options
-srun --unbuffered python confusion_matrix.py $options
+srun --unbuffered python show_ensemble_output.py $options
