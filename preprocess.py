@@ -88,8 +88,13 @@ def delete_images_without_matching_masks():
     """Deletes image files that do not have matching mask files."""
     for f in os.listdir('skyimage/'):
         g = 'cldmask/cldmask' + extract_timestamp(f) + '.png'
-        if (not os.path.isfile(g)) or (os.path.getsize(g) == 0):
+        if not os.path.isfile(g):
+            print('removing ' + f + ', which has no target mask')
             os.remove('skyimage/' + f)
+        elif os.path.getsize(g) == 0:
+            print('removing ' + f + ', which has a target mask of size 0')
+            os.remove('skyimage/' + f)
+            os.remove(g)           
 
 def depth_first_search(r, c, img, visited, ever_visited, stack):
     """Returns True if there is a connected region including img[r][c] that is all
@@ -160,14 +165,15 @@ def simplify_all_names():
     """Simplifies all of the filenames in skyimage/ and cldmask/."""
     for dir in ('skyimage/', 'cldmask/'):
         for f in os.listdir(dir):
-            os.rename(dir + f, dir + simplify_name(f))
+            if not f.endswith('.tar'):
+                os.rename(dir + f, dir + simplify_name(f))
 
 def simplify_all_images():
     """Crops the images in skyimage/ down to 480x480, writes those to
     simpleimage/, and returns the number of images cropped."""
     counts = 0
     for file in os.listdir('skyimage/'):
-        if file[0] != '.':
+        if file.endswith('.jpg'):
             img = misc.imread('skyimage/' + file)
             cropped = crop_image(img)
             counts = counts + 1
@@ -181,17 +187,18 @@ def simplify_all_masks():
     GREEN."""
     counts = np.zeros(5, dtype=np.int)
     for file in os.listdir('cldmask/'):
-        img = misc.imread('cldmask/' + file)
-        img = crop_image(img)
-        print('About to remove sun from ' + file)
-        if (img == YELLOW).all(axis=2).any():
-            print('Removing yellow sun')
-            img[(img == YELLOW).all(axis=2)] = BLACK
-        else:
-            print('Removing white sun')
-            img = remove_white_sun(img)
-        counts = counts + count_colors(img)
-        Image.fromarray(img).save('simplemask/simplemask' + extract_timestamp(file) + '.png')
+        if file.endswith('.png'):
+            img = misc.imread('cldmask/' + file)
+            img = crop_image(img)
+            print('About to remove sun from ' + file)
+            if (img == YELLOW).all(axis=2).any():
+                print('Removing yellow sun')
+                img[(img == YELLOW).all(axis=2)] = BLACK
+            else:
+                print('Removing white sun')
+                img = remove_white_sun(img)
+            counts = counts + count_colors(img)
+            Image.fromarray(img).save('simplemask/simplemask' + extract_timestamp(file) + '.png')
     return (counts / counts.sum())
 
 def simplify_name(filename):
@@ -202,7 +209,6 @@ def test_remove_white_sun():
     """For manually (visually) verifying that remove_white_sun works."""
     img = misc.imread('data/cldmask/cldmask20160414174600.png')
     img = remove_white_sun(img)
-    print(type(img))
     img = Image.fromarray(img.astype('uint8'))
     img.show()
     return img
@@ -234,7 +240,7 @@ if __name__ == '__main__':
     unpack_all_tars()
     print('Simplifying names')
     simplify_all_names()
-    print('Removing images without masks')
+    print('Deleting images without masks')
     delete_images_without_matching_masks()
     print('Simplifying images')
     print(str(simplify_all_images()) + ' images processed')
