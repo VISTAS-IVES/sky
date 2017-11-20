@@ -7,6 +7,6 @@
 #SBATCH --partition medium
 #SBATCH --output=output.txt
 
-module load Python/intel-python3.5.2
+module load Python/3.6.2/intel
 echo $options
-srun --unbuffered python plot_learning_curve.py $options
+srun --unbuffered python train.py $options
