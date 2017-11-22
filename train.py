@@ -38,9 +38,9 @@ import subprocess
 from preprocess import BLUE, BLACK, GREEN, COLORS
 
 # Training parameters
-BATCH_SIZE = 5
+BATCH_SIZE = 50
 LEARNING_RATE = 0.0001
-TRAINING_STEPS = 100
+TRAINING_STEPS = 200
 
 def build_net(layer_info):
     """Builds a network given command-line layer info."""
